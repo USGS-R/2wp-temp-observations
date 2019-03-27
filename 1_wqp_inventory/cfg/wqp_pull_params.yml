@@ -1,0 +1,12 @@
+# https://www.waterqualitydata.us/Codes/Characteristicname?mimeType=xml
+characteristicName:
+  temperature:
+    - "Temperature"
+    - "Temperature, sample"
+    - "Temperature, water"
+    - "Temperature, water, deg F"
+
+# https://www.waterqualitydata.us/Codes/sampleMedia?mimeType=xml
+sampleMedia:
+  - "Water"
+  - "water"
