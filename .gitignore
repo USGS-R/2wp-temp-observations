@@ -1,0 +1,15 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Data files
+*.rds
+*.Rds
+*.feather
+*.Feather
+*.Rdata
+.httr-oauth
+
+# remake
+.remake/
