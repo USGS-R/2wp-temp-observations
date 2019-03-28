@@ -1,0 +1,13 @@
+version: 0.3.0
+name: 1_wqp_inventory/inout/wqp_pull_partitions.feather.ind
+type: file
+hash: 352f944d591d9b38efc5018f32546d50
+time: 2019-03-28 20:00:11 UTC
+depends:
+  1_wqp_inventory/inout/wqp_inventory.feather.ind: 8cca331ba0ac5d94398674c5f96e265f
+  1_wqp_inventory/inout/wqp_pull_partitions_archive.feather.ind: 3d19fc2d5a8cd8991f59630b5d527705
+fixed: e77a4c06cf814b2b1e897c1dbbfbc725
+code:
+  functions:
+    partition_wqp_inventory: 68d02a3e611b989702ae33bcc2c77e67
+

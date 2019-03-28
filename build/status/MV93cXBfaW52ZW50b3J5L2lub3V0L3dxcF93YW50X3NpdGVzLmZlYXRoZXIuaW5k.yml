@@ -1,0 +1,12 @@
+version: 0.3.0
+name: 1_wqp_inventory/inout/wqp_want_sites.feather.ind
+type: file
+hash: f6154d91ab2ed9445f8157fd485c04a7
+time: 2019-03-28 21:25:59 UTC
+depends:
+  wqp_pull_parameters: dc448b7516f6f104baa55bff4519a94a
+fixed: dcf237ba54a4b89c54d249b34b553fe9
+code:
+  functions:
+    get_wqp_sites: c362cb2e5a11570cca0fdfb989cc4f39
+
