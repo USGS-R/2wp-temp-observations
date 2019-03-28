@@ -1,0 +1,10 @@
+target_default: everything
+
+include:
+  - 1_wqp_inventory.yml
+
+targets:
+  everything:
+    depends:
+      - 1_wqp_inventory
+
