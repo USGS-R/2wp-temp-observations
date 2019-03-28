@@ -10,3 +10,8 @@ characteristicName:
 sampleMedia:
   - "Water"
   - "water"
+  
+Sitetype:
+  - "Lake, Reservoir, Impoundment"
+  - "Stream"
+  - "Wetland"
