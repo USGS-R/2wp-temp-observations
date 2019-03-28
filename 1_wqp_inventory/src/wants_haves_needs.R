@@ -8,7 +8,10 @@
 #'   "Temperature" and "Temperature, water").
 #' @return A dataframe with columns "site" and "variable" that captures all
 #'   possible combinations of sites and variables of interest.
-wqp_calc_wants <- function(wants_ind, wqp_sites, wqp_variables) {
+wqp_calc_wants <- function(wants_ind, sites_ind, wqp_variables) {
+  
+  wqp_sites <-  feather::read_feather(sc_retrieve(sites_ind))
+  
   df <- expand.grid(
     MonitoringLocationIdentifier=as.character(wqp_sites$MonitoringLocationIdentifier),
     ParamGroup=names(wqp_variables),
