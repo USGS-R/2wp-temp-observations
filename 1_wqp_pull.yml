@@ -10,10 +10,10 @@ packages:
   - dplyr
   
 sources:
-  - 1_wqp_inventory/src/get_wqp_sites.R
-  - 1_wqp_inventory/src/summarize_sites.R
-  - 1_wqp_inventory/src/wants_haves_needs.R
-  - 1_wqp_inventory/src/wqp_inventory.R
+  - 1_wqp_pull/src/get_wqp_sites.R
+  - 1_wqp_pull/src/summarize_sites.R
+  - 1_wqp_pull/src/wants_haves_needs.R
+  - 1_wqp_pull/src/wqp_pull.R
   - lib/src/require_local.R
   
 targets:
@@ -26,8 +26,11 @@ targets:
   wqp_pull_parameters:
     command: yaml.load_file('1_wqp_inventory/cfg/wqp_pull_params.yml')
 
-  wqp_want_sites:
+  1_wqp_pull/inout/wqp_want_sites.feather.ind:
     command: get_wqp_sites(wqp_pull_parameters)
+    
+  1_wqp_pull/inout/wqp_want_sites.feather.ind:
+    command: gd_get('1_wqp_pull/inout/wqp_want_sites.feather.ind')
     
   wqp_want_sites_test:
     command: slice(wqp_want_sites, I(1:50))
