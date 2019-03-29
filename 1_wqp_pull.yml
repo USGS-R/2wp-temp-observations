@@ -19,7 +19,7 @@ sources:
 targets:
   1_wqp_pull:
     depends:
-      - 1_wqp_pull/inout/wqp_pull_partitions.feather.ind
+      - 1_wqp_pull/log/1_wqp_pull_tasks.ind
       
 # -- get list of wqp sites with parameters of interest -- #
 
@@ -125,3 +125,22 @@ targets:
   
   1_wqp_pull/inout/wqp_pull_partitions.feather:
     command: gd_get('1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
+    
+# -- pull data! -- #
+
+  # prepare a remake-style plan for running each state as a separate
+  # remake target in a separate remake file (tasks_1_wqp.yml)
+  wqp_pull_plan:
+    command: plan_wqp_pull(partitions_ind='1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
+  
+  1_wqp_pull_tasks.yml:
+    command: create_wqp_pull_makefile(makefile=target_name, task_plan=wqp_pull_plan)
+
+  # run the data pulls
+  1_wqp_pull/log/1_wqp_pull_tasks.ind:
+    command: loop_wqp_tasks(
+      ind_file=target_name,
+      task_plan=wqp_pull_plan, task_makefile='1_wqp_pull_tasks.yml',
+      num_tries=I(30), sleep_on_error=I(20))
+
+
