@@ -1,4 +1,4 @@
-target_default: 1_wqp_inventory
+target_default: 1_wqp_pull
 
 packages:
   - dataRetrieval
@@ -17,14 +17,14 @@ sources:
   - lib/src/require_local.R
   
 targets:
-  1_wqp_inventory:
+  1_wqp_pull:
     depends:
-      - 1_wqp_inventory/inout/wqp_pull_partitions.feather.ind
+      - 1_wqp_pull/inout/wqp_pull_partitions.feather.ind
       
 # -- get list of wqp sites with parameters of interest -- #
 
   wqp_pull_parameters:
-    command: yaml.load_file('1_wqp_inventory/cfg/wqp_pull_params.yml')
+    command: yaml.load_file('1_wqp_pull/cfg/wqp_pull_params.yml')
 
   1_wqp_pull/inout/wqp_want_sites.feather.ind:
     command: get_wqp_sites(wqp_pull_parameters)
@@ -32,31 +32,35 @@ targets:
   1_wqp_pull/inout/wqp_want_sites.feather.ind:
     command: gd_get('1_wqp_pull/inout/wqp_want_sites.feather.ind')
     
-  wqp_want_sites_test:
-    command: slice(wqp_want_sites, I(1:50))
+  1_wqp_pull/inout/wqp_want_sites_test.feather.ind:
+    command: subset_sites('1_wqp_pull/inout/wqp_want_sites.feather.ind')
     
+  1_wqp_pull/inout/wqp_want_sites_test.feather:
+    command: gd_get('1_wqp_pull/inout/wqp_want_sites_test.feather.ind')
+    
+  wqp_want_variables:
+    command: wqp_pull_parameters[[I('characteristicName')]]
+    
+# -- summarize sites -- #
   state_lake_site_summary:
     command: summarize_sites(wqp_want_sites, I('lake|reservoir|impound'))
     
   state_stream_site_summary:
     command: summarize_sites(wqp_want_sites, I('stream|river'))
     
-  1_wqp_inventory/doc/state_lake_site_summary.png:
+  1_wqp_pull/doc/state_lake_site_summary.png:
     command: plot_summary(state_lake_site_summary, target_name)
     
-  1_wqp_inventory/doc/state_stream_site_summary.png:
+  1_wqp_pull/doc/state_stream_site_summary.png:
     command: plot_summary(state_stream_site_summary, target_name)
-    
-  wqp_want_variables:
-    command: wqp_pull_parameters[[I('characteristicName')]]
     
 # -- compute wants -- #
     
-  1_wqp_inventory/inout/wqp_wants.feather.ind:
-    command: wqp_calc_wants(target_name, wqp_want_sites_test, wqp_want_variables)
+  1_wqp_pull/inout/wqp_wants.feather.ind:
+    command: wqp_calc_wants(target_name, '1_wqp_pull/inout/wqp_want_sites_test.feather.ind', wqp_want_variables)
     
-  1_wqp_inventory/inout/wqp_wants.feather:
-    command: require_local('1_wqp_inventory/inout/wqp_wants.feather.ind')
+  1_wqp_pull/inout/wqp_wants.feather:
+    command: require_local('1_wqp_pull/inout/wqp_wants.feather.ind')
     
 # -- compute haves -- # 
   # a complete [re]pulling workflow should include 2-3 rebuilds of wqp_haves. the first time
@@ -67,36 +71,36 @@ targets:
   # there should be new files in the haves_dir that this final build will recognize to create
   # a complete mapping of sites to data files (wqp_haves has a 1:1 mapping, which is better
   # for later use than the 1:many mapping in partitions_archive).
-  1_wqp_inventory/inout/wqp_haves.feather.ind:
+  1_wqp_pull/inout/wqp_haves.feather.ind:
     command: wqp_calc_haves(
       haves_ind=target_name,
-      haves_dir=I('1_wqp_inventory/out'),
-      archive_ind='1_wqp_inventory/inout/wqp_pull_partitions_archive.feather.ind')
-  1_wqp_inventory/inout/wqp_haves.feather:
-    command: gd_get('1_wqp_inventory/inout/wqp_haves.feather.ind')
+      haves_dir=I('1_wqp_pull/out'),
+      archive_ind='1_wqp_pull/inout/wqp_pull_partitions_archive.feather.ind')
+  1_wqp_pull/inout/wqp_haves.feather:
+    command: gd_get('1_wqp_pull/inout/wqp_haves.feather.ind')
 
   # compute needs
-  1_wqp_inventory/inout/wqp_needs.feather.ind:
+  1_wqp_pull/inout/wqp_needs.feather.ind:
     command: wqp_calc_needs(
       needs_ind=target_name,
-      wants_ind='1_wqp_inventory/inout/wqp_wants.feather.ind',
-      haves_ind='1_wqp_inventory/inout/wqp_haves.feather.ind')
-  1_wqp_inventory/inout/wqp_needs.feather:
-    command: require_local('1_wqp_inventory/inout/wqp_needs.feather.ind')
+      wants_ind='1_wqp_pull/inout/wqp_wants.feather.ind',
+      haves_ind='1_wqp_pull/inout/wqp_haves.feather.ind')
+  1_wqp_pull/inout/wqp_needs.feather:
+    command: require_local('1_wqp_pull/inout/wqp_needs.feather.ind')
 
 
   # -- get inventory of observations available to download --
 
   # get inventory of samples available on WQP
-  1_wqp_inventory/inout/wqp_inventory.feather.ind:
+  1_wqp_pull/inout/wqp_inventory.feather.ind:
     command: inventory_wqp(
       inv_ind = target_name,
-      needs_ind='1_wqp_inventory/inout/wqp_needs.feather.ind',
+      needs_ind='1_wqp_pull/inout/wqp_needs.feather.ind',
       wqp_pull_params = wqp_pull_parameters,
-      wqp_partition_cfg=I('1_wqp_inventory/cfg/wqp_partition_config.yml'))
+      wqp_partition_cfg=I('1_wqp_pull/cfg/wqp_partition_config.yml'))
       
-  1_wqp_inventory/inout/wqp_inventory.feather:
-    command: require_local('1_wqp_inventory/inout/wqp_inventory.feather.ind')
+  1_wqp_pull/inout/wqp_inventory.feather:
+    command: require_local('1_wqp_pull/inout/wqp_inventory.feather.ind')
 
   # make a plan for how to partition the inventory into separate data pulls, keeping track of previous dats pulls.
   # partitions_archive is altered each time we iterate through the wants-haves-needs-pull process.
@@ -106,15 +110,15 @@ targets:
   # which appends any new partition info to partitions_archive each time it runs. these updates
   # will cause rebuilds of wqp_haves and wqp_needs, but if no data files have actually been pulled,
   # those files will be unchanged and will not drive a repull of the inventory.
-  1_wqp_inventory/inout/wqp_pull_partitions_archive.feather.ind:
+  1_wqp_pull/inout/wqp_pull_partitions_archive.feather.ind:
     command: initialize_partitions_archive(target_name)
-  1_wqp_inventory/inout/wqp_pull_partitions_archive.feather:
-    command: gd_get('1_wqp_inventory/inout/wqp_pull_partitions_archive.feather.ind')
-  1_wqp_inventory/inout/wqp_pull_partitions.feather.ind:
+  1_wqp_pull/inout/wqp_pull_partitions_archive.feather:
+    command: gd_get('1_wqp_pull/inout/wqp_pull_partitions_archive.feather.ind')
+  1_wqp_pull/inout/wqp_pull_partitions.feather.ind:
     command: partition_wqp_inventory(
       partitions_ind=target_name,
-      inventory_ind='1_wqp_inventory/inout/wqp_inventory.feather.ind',
-      wqp_partition_cfg=I('1_wqp_inventory/cfg/wqp_partition_config.yml'),
-      archive_ind='1_wqp_inventory/inout/wqp_pull_partitions_archive.feather.ind')
-  1_wqp_inventory/inout/wqp_pull_partitions.feather:
-    command: gd_get('1_wqp_inventory/inout/wqp_pull_partitions.feather.ind')
+      inventory_ind='1_wqp_pull/inout/wqp_inventory.feather.ind',
+      wqp_partition_cfg=I('1_wqp_pull/cfg/wqp_partition_config.yml'),
+      archive_ind='1_wqp_pull/inout/wqp_pull_partitions_archive.feather.ind')
+  1_wqp_pull/inout/wqp_pull_partitions.feather:
+    command: gd_get('1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
