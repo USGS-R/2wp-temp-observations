@@ -14,6 +14,7 @@ sources:
   - 1_wqp_pull/src/summarize_sites.R
   - 1_wqp_pull/src/wants_haves_needs.R
   - 1_wqp_pull/src/wqp_inventory.R
+  - 1_wqp_pull/src/wqp_pull.R
   - lib/src/require_local.R
   
 targets:
