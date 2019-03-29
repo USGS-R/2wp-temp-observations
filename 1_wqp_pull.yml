@@ -13,7 +13,7 @@ sources:
   - 1_wqp_pull/src/get_wqp_sites.R
   - 1_wqp_pull/src/summarize_sites.R
   - 1_wqp_pull/src/wants_haves_needs.R
-  - 1_wqp_pull/src/wqp_pull.R
+  - 1_wqp_pull/src/wqp_inventory.R
   - lib/src/require_local.R
   
 targets:
@@ -27,13 +27,13 @@ targets:
     command: yaml.load_file('1_wqp_pull/cfg/wqp_pull_params.yml')
 
   1_wqp_pull/inout/wqp_want_sites.feather.ind:
-    command: get_wqp_sites(wqp_pull_parameters)
+    command: get_wqp_sites('1_wqp_pull/inout/wqp_want_sites.feather.ind', wqp_pull_parameters)
     
-  1_wqp_pull/inout/wqp_want_sites.feather.ind:
+  1_wqp_pull/inout/wqp_want_sites.feather:
     command: gd_get('1_wqp_pull/inout/wqp_want_sites.feather.ind')
     
   1_wqp_pull/inout/wqp_want_sites_test.feather.ind:
-    command: subset_sites('1_wqp_pull/inout/wqp_want_sites.feather.ind')
+    command: subset_sites('1_wqp_pull/inout/wqp_want_sites.feather.ind', target_name)
     
   1_wqp_pull/inout/wqp_want_sites_test.feather:
     command: gd_get('1_wqp_pull/inout/wqp_want_sites_test.feather.ind')
@@ -42,17 +42,17 @@ targets:
     command: wqp_pull_parameters[[I('characteristicName')]]
     
 # -- summarize sites -- #
-  state_lake_site_summary:
-    command: summarize_sites(wqp_want_sites, I('lake|reservoir|impound'))
+  #state_lake_site_summary:
+   # command: summarize_sites(wqp_want_sites, I('lake|reservoir|impound'))
     
-  state_stream_site_summary:
-    command: summarize_sites(wqp_want_sites, I('stream|river'))
+  #state_stream_site_summary:
+   # command: summarize_sites(wqp_want_sites, I('stream|river'))
     
-  1_wqp_pull/doc/state_lake_site_summary.png:
-    command: plot_summary(state_lake_site_summary, target_name)
+  #1_wqp_pull/doc/state_lake_site_summary.png:
+   # command: plot_summary(state_lake_site_summary, target_name)
     
-  1_wqp_pull/doc/state_stream_site_summary.png:
-    command: plot_summary(state_stream_site_summary, target_name)
+  #1_wqp_pull/doc/state_stream_site_summary.png:
+   # command: plot_summary(state_stream_site_summary, target_name)
     
 # -- compute wants -- #
     
@@ -112,13 +112,16 @@ targets:
   # those files will be unchanged and will not drive a repull of the inventory.
   1_wqp_pull/inout/wqp_pull_partitions_archive.feather.ind:
     command: initialize_partitions_archive(target_name)
+  
   1_wqp_pull/inout/wqp_pull_partitions_archive.feather:
     command: gd_get('1_wqp_pull/inout/wqp_pull_partitions_archive.feather.ind')
+  
   1_wqp_pull/inout/wqp_pull_partitions.feather.ind:
     command: partition_wqp_inventory(
       partitions_ind=target_name,
       inventory_ind='1_wqp_pull/inout/wqp_inventory.feather.ind',
       wqp_partition_cfg=I('1_wqp_pull/cfg/wqp_partition_config.yml'),
       archive_ind='1_wqp_pull/inout/wqp_pull_partitions_archive.feather.ind')
+  
   1_wqp_pull/inout/wqp_pull_partitions.feather:
     command: gd_get('1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
