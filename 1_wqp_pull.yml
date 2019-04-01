@@ -58,7 +58,7 @@ targets:
 # -- compute wants -- #
     
   1_wqp_pull/inout/wqp_wants.feather.ind:
-    command: wqp_calc_wants(target_name, '1_wqp_pull/inout/wqp_want_sites_test.feather.ind', wqp_want_variables)
+    command: wqp_calc_wants(target_name, '1_wqp_pull/inout/wqp_want_sites.feather.ind', wqp_want_variables)
     
   1_wqp_pull/inout/wqp_wants.feather:
     command: require_local('1_wqp_pull/inout/wqp_wants.feather.ind')
