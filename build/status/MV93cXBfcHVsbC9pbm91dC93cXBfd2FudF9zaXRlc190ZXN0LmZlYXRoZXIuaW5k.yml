@@ -1,0 +1,12 @@
+version: 0.3.0
+name: 1_wqp_pull/inout/wqp_want_sites_test.feather.ind
+type: file
+hash: f67773cacf6f4aa4b3fa7dbfb13bc8a2
+time: 2019-03-29 16:55:40 UTC
+depends:
+  1_wqp_pull/inout/wqp_want_sites.feather.ind: 1dae5231a62963d2404e5d24dd008458
+fixed: dd24d0484514e16a5d46775d63c8c5fd
+code:
+  functions:
+    subset_sites: 1ea19102f9f60c612c7728d7d566622c
+

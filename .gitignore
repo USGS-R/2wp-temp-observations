@@ -1,0 +1,21 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Data files
+*.rds
+*.Rds
+*.feather
+*.Feather
+*.Rdata
+.httr-oauth
+
+# remake
+.remake/
+
+# task plans
+**_tasks.yml
+
+# temporary folders
+1_wqp_pull/tmp/*

@@ -1,0 +1,12 @@
+version: 0.3.0
+name: 1_wqp_pull/inout/wqp_haves.feather.ind
+type: file
+hash: d351e1e169f823c02d457dd7a03beefa
+time: 2019-03-29 17:00:50 UTC
+depends:
+  1_wqp_pull/inout/wqp_pull_partitions_archive.feather.ind: f25f249b79708b203467f3679d565be0
+fixed: 53734e1101105429c08ac44613c7e4f5
+code:
+  functions:
+    wqp_calc_haves: 71f604303648194cce007b039be21610
+
