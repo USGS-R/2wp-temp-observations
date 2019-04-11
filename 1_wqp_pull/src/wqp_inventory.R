@@ -131,11 +131,10 @@ partition_wqp_inventory <- function(partitions_ind, inventory_ind, wqp_partition
     partitions <- atomic_groups %>%
       mutate(
         PullDate = pull_time,
-        PullTask = sprintf('%s_%s_%03d', pull_id, assignments)) %>%
+        PullTask = sprintf('%s_%03d', pull_id, assignments)) %>%
       left_join(select(wqp_inventory, MonitoringLocationIdentifier, SiteNumObs=resultCount), by='MonitoringLocationIdentifier') %>%
-      select(MonitoringLocationIdentifier, SiteNumObs, PullTask, PullDate, ParamGroup)
+      select(MonitoringLocationIdentifier, SiteNumObs, PullTask, PullDate)
 
-    return(partitions)
 
   # Also write the data_frame to a location that will get overwritten with
   # each new pass through this function
