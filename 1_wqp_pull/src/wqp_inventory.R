@@ -18,65 +18,38 @@
 #'   one row per site/variable combination and the 'resultCount' being the
 #'   variable from which we will make decisions about partitioning data pull
 #'   requests.
-inventory_wqp <- function(inv_ind, needs_ind, wqp_pull_params, wqp_partition_cfg) {
+inventory_wqp <- function(inv_ind, wqp_pull_params) {
 
   # identify constituents we need
-  needs <- feather::read_feather(sc_retrieve(needs_ind))
-  constituents <- as.character(unique(needs$ParamGroup))
+  constituents <- names(wqp_pull_params$characteristicName)
 
   # get pull configuration information
-  wqp_partition_config <- yaml::yaml.load_file(wqp_partition_cfg)
-  max_inv_chunk <- wqp_partition_config$target_inv_size
+  #wqp_partition_config <- yaml::yaml.load_file(wqp_partition_cfg)
+  #max_inv_chunk <- wqp_partition_config$target_inv_size
 
   # loop over the constituents and groups of sites, getting rows for each
   total_time <- system.time({
-    samples <- if(length(constituents) > 0) {
-      bind_rows(lapply(constituents, function(constituent) {
+
         wqp_args <- wqp_pull_params
-        wqp_args$characteristicName <- wqp_pull_params$characteristicName[[constituent]]
-        constit_sites <- needs %>%
-          filter(ParamGroup %in% constituent) %>%
-          pull(MonitoringLocationIdentifier)
-        n_chunks <- ceiling(length(constit_sites)/max_inv_chunk)
-        bind_rows(lapply(seq_len(n_chunks), function(chunk) {
-          chunk_sites <- (1 + (chunk-1)*max_inv_chunk) : min(length(constit_sites), chunk*max_inv_chunk)
-          message(sprintf(
-            '%s: getting inventory for %s, sites %d-%d of %d...',
-            Sys.time(), constituent, head(chunk_sites, 1), tail(chunk_sites, 1), length(constit_sites)),
-            appendLF=FALSE)
-          wqp_args <- c(wqp_args, list(siteid = constit_sites[chunk_sites]))
-          call_time <- system.time({
-            wqp_wdat <- tryCatch({
-              do.call(whatWQPdata, wqp_args) %>%
-                select(MonitoringLocationIdentifier, MonitoringLocationName, resultCount)
-            }, error=function(e) {
-              # keep going IFF the only error was that there weren't any matching sites
-              if(grepl('arguments imply differing number of rows', e$message)) {
-                data_frame(MonitoringLocationIdentifier='', MonitoringLocationName='', resultCount=0) %>%
-                  filter(FALSE)
-              } else {
-                stop(e)
-              }
-            })
+        
+        # collapse all constituents into single vector
+        wqp_args$characteristicName <- as.character(unlist(wqp_args$characteristicName))
+        
+        # only filter using characteristic names
+            wqp_wdat <-
+              do.call(whatWQPdata, wqp_args['characteristicName'])
+           
           })
-          message(sprintf('retrieved %d rows in %0.0f seconds', nrow(wqp_wdat), call_time[['elapsed']]))
-          return(wqp_wdat)
-        })) %>%
-          mutate(ParamGroup = constituent)
-      })) %>%
-        right_join(needs, by=c('ParamGroup', 'MonitoringLocationIdentifier', 'MonitoringLocationName')) %>%
-        mutate(resultCount=as.integer(case_when(is.na(resultCount) ~ 0, TRUE ~ resultCount)))
-    } else {
-      data_frame(MonitoringLocationIdentifier='', MonitoringLocationName='', resultCount=1L, ParamGroup='') %>%
-        filter(FALSE)
-    }
-  })
-  message(sprintf('sample inventory complete, required %0.0f seconds', total_time[['elapsed']]))
+  
+  message(sprintf('sample inventory complete, required %0.0f seconds to retrieve %d rows', total_time[['elapsed']], nrow(wqp_dat)))
+  return(wqp_wdat)
+
 
   # write and indicate the data file
   data_file <- scipiper::as_data_file(inv_ind)
-  feather::write_feather(samples, data_file)
+  feather::write_feather(wqp_dat, data_file)
   sc_indicate(inv_ind, data_file=data_file)
+  
 }
 
 #' Partition calls to WQP based on number of records available in WQP and a
