@@ -15,3 +15,13 @@ Sitetype:
   - "Lake, Reservoir, Impoundment"
   - "Stream"
   - "Wetland"
+
+DropLocationTypeName:
+  - "Aggregate groundwater use"
+  - "Well"
+  - "Estuary"
+  - "Ocean"
+  - "Subsurface"
+  - "Atmosphere"
+  - "Aggregate groundwater use "
+  - "Facility"
