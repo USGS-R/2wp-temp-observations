@@ -10,9 +10,6 @@ packages:
   - dplyr
   
 sources:
-  - 1_wqp_pull/src/get_wqp_sites.R
-  - 1_wqp_pull/src/summarize_sites.R
-  - 1_wqp_pull/src/wants_haves_needs.R
   - 1_wqp_pull/src/wqp_inventory.R
   - 1_wqp_pull/src/wqp_pull.R
   - lib/src/require_local.R
@@ -22,86 +19,23 @@ targets:
     depends:
       - 1_wqp_pull/log/1_wqp_pull_tasks.ind
       
-# -- get list of wqp sites with parameters of interest -- #
+# -- get a CONUS inventory of available data for download -- #
 
   wqp_pull_parameters:
     command: yaml.load_file('1_wqp_pull/cfg/wqp_pull_params.yml')
-
-  1_wqp_pull/inout/wqp_want_sites.feather.ind:
-    command: get_wqp_sites('1_wqp_pull/inout/wqp_want_sites.feather.ind', wqp_pull_parameters)
     
-  1_wqp_pull/inout/wqp_want_sites.feather:
-    command: gd_get('1_wqp_pull/inout/wqp_want_sites.feather.ind')
-    
-  1_wqp_pull/inout/wqp_want_sites_test.feather.ind:
-    command: subset_sites('1_wqp_pull/inout/wqp_want_sites.feather.ind', target_name)
-    
-  1_wqp_pull/inout/wqp_want_sites_test.feather:
-    command: gd_get('1_wqp_pull/inout/wqp_want_sites_test.feather.ind')
-    
-  wqp_want_variables:
-    command: wqp_pull_parameters[[I('characteristicName')]]
-    
-# -- summarize sites -- #
-  #state_lake_site_summary:
-   # command: summarize_sites(wqp_want_sites, I('lake|reservoir|impound'))
-    
-  #state_stream_site_summary:
-   # command: summarize_sites(wqp_want_sites, I('stream|river'))
-    
-  #1_wqp_pull/doc/state_lake_site_summary.png:
-   # command: plot_summary(state_lake_site_summary, target_name)
-    
-  #1_wqp_pull/doc/state_stream_site_summary.png:
-   # command: plot_summary(state_stream_site_summary, target_name)
-    
-# -- compute wants -- #
-    
-  1_wqp_pull/inout/wqp_wants.feather.ind:
-    command: wqp_calc_wants(target_name, '1_wqp_pull/inout/wqp_want_sites.feather.ind', wqp_want_variables)
-    
-  1_wqp_pull/inout/wqp_wants.feather:
-    command: require_local('1_wqp_pull/inout/wqp_wants.feather.ind')
-    
-# -- compute haves -- # 
-  # a complete [re]pulling workflow should include 2-3 rebuilds of wqp_haves. the first time
-  # we'll get a list of all data currently known to be pulled. the second time might happen
-  # if stop after building the partitions. in this case the rebuild will produce the same list in wqp_haves,
-  # so nothing downstream will be forced to rebuild. the last time should happen by scmake(force=TRUE)
-  # after the data [re]pull is complete - this time nothing will naturally target the rebuild, but
-  # there should be new files in the haves_dir that this final build will recognize to create
-  # a complete mapping of sites to data files (wqp_haves has a 1:1 mapping, which is better
-  # for later use than the 1:many mapping in partitions_archive).
-  1_wqp_pull/inout/wqp_haves.feather.ind:
-    command: wqp_calc_haves(
-      haves_ind=target_name,
-      haves_dir=I('1_wqp_pull/out'),
-      archive_ind='1_wqp_pull/inout/wqp_pull_partitions_archive.feather.ind')
-  1_wqp_pull/inout/wqp_haves.feather:
-    command: gd_get('1_wqp_pull/inout/wqp_haves.feather.ind')
-
-  # compute needs
-  1_wqp_pull/inout/wqp_needs.feather.ind:
-    command: wqp_calc_needs(
-      needs_ind=target_name,
-      wants_ind='1_wqp_pull/inout/wqp_wants.feather.ind',
-      haves_ind='1_wqp_pull/inout/wqp_haves.feather.ind')
-  1_wqp_pull/inout/wqp_needs.feather:
-    command: require_local('1_wqp_pull/inout/wqp_needs.feather.ind')
-
-
-  # -- get inventory of observations available to download --
+  # -- get inventory of observations available to download -- #
 
   # get inventory of samples available on WQP
+  # currently subsetted to a single huc for testing
+  # only filters by characteristicNames, and pulls all at the same time
   1_wqp_pull/inout/wqp_inventory.feather.ind:
     command: inventory_wqp(
       inv_ind = target_name,
-      needs_ind='1_wqp_pull/inout/wqp_needs.feather.ind',
-      wqp_pull_params = wqp_pull_parameters,
-      wqp_partition_cfg=I('1_wqp_pull/cfg/wqp_partition_config.yml'))
+      wqp_pull_params = wqp_pull_parameters)
       
   1_wqp_pull/inout/wqp_inventory.feather:
-    command: require_local('1_wqp_pull/inout/wqp_inventory.feather.ind')
+    command: gd_get('1_wqp_pull/inout/wqp_inventory.feather.ind')
 
   # make a plan for how to partition the inventory into separate data pulls, keeping track of previous dats pulls.
   # partitions_archive is altered each time we iterate through the wants-haves-needs-pull process.
