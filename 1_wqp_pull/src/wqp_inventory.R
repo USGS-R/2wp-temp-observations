@@ -6,7 +6,7 @@
 #' on WQP that we need to fullfil our "needs" - which is a series of
 #' site/variable combinations.
 #'
-#' @param needs_ind Indicator file for a table with columns site and variable
+#' @param inv_ind Indicator file for a table with columns site and variable
 #'   which describes what we going to pull from WQP, which was calculated as
 #'   the difference between our data "wants" and our data "haves".
 #' @param wqp_pull_params List of lists that contain parameters of interest
@@ -19,36 +19,45 @@
 #'   variable from which we will make decisions about partitioning data pull
 #'   requests.
 inventory_wqp <- function(inv_ind, wqp_pull_params) {
-
-  # identify constituents we need
-  constituents <- names(wqp_pull_params$characteristicName)
-
-  # get pull configuration information
-  #wqp_partition_config <- yaml::yaml.load_file(wqp_partition_cfg)
-  #max_inv_chunk <- wqp_partition_config$target_inv_size
-
-  # loop over the constituents and groups of sites, getting rows for each
-  total_time <- system.time({
-
-        wqp_args <- wqp_pull_params
-        
-        # collapse all constituents into single vector
-        wqp_args$characteristicName <- as.character(unlist(wqp_args$characteristicName))
-        
-        # only filter using characteristic names
-            wqp_wdat <-
-              do.call(whatWQPdata, wqp_args['characteristicName'])
-           
-          })
   
-  message(sprintf('sample inventory complete, required %0.0f seconds to retrieve %d rows', total_time[['elapsed']], nrow(wqp_dat)))
-  return(wqp_wdat)
+  wqp_call <- function(fun, args) {
+    time <- system.time(out <- do.call(fun, args))
+    info <- list(
+      time = time[['elapsed']],
+      nrow = nrow(out),
+      out = out
+    )
+    return(info)
+  }
+  
+  wqp_args <- wqp_pull_params
+  
+  # collapse all constituents into single vector
+  wqp_args$characteristicName <- as.character(unlist(wqp_args$characteristicName))
+  
+  # add a test huc for now
+  wqp_args$huc <- '02040205'
+  
+  # only filter using characteristic names (and huc for test)
+  wqp_dat <- wqp_call(whatWQPdata, wqp_args[c('characteristicName', 'huc')])
+  
+  # extract coordinates
+  coords <- data.frame(matrix(unlist(wqp_dat$out$coordinates), nrow = length(wqp_dat$out$coordinates), byrow = T))
 
-
+  # keep columns of interest, put back lat/long
+  # keeping lat/long here in case there was a situation where you'd want to 
+  # take stock/map sites before pulling data
+  dat_out <- wqp_dat$out %>%
+    mutate(latitude = coords$X2, longitude = coords$X1) %>%
+    select(OrganizationIdentifier, MonitoringLocationIdentifier, StateName, CountyName, HUCEightDigitCode, latitude, longitude, resultCount)
+  
+  # spit out nrows and time it took to get inventory
+  message(sprintf('sample inventory complete, required %0.2f hours to retrieve %d rows', wqp_dat$time/(60*60), wqp_dat$nrow))
+  
   # write and indicate the data file
   data_file <- scipiper::as_data_file(inv_ind)
-  feather::write_feather(wqp_dat, data_file)
-  sc_indicate(inv_ind, data_file=data_file)
+  feather::write_feather(dat_out, data_file)
+  gd_put(inv_ind)
   
 }
 
