@@ -42,6 +42,7 @@ targets:
   1_wqp_pull/inout/wqp_pull_partitions.feather.ind:
     command: partition_wqp_inventory(
       partitions_ind=target_name,
+      wqp_pull_params = wqp_pull_parameters,
       inventory_ind='1_wqp_pull/inout/wqp_inventory.feather.ind',
       wqp_partition_cfg=I('1_wqp_pull/cfg/wqp_partition_config.yml'))
   
