@@ -1,0 +1,13 @@
+version: 0.3.0
+name: 1_wqp_pull/log/1_wqp_pull_tasks.ind
+type: file
+hash: a7dc25b261afce43692efdbaaa15d534
+time: 2019-04-12 17:34:16 UTC
+depends:
+  wqp_pull_plan: 5d643796571630326401de89401edc51
+  1_wqp_pull_tasks.yml: 757b02934a53aa0155dfd13508c717d0
+fixed: 50c49a7c292ea4ccbe07415059a674db
+code:
+  functions:
+    loop_wqp_tasks: 33f57e757da0dd017ed22a8462d6916e
+
