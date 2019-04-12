@@ -18,13 +18,6 @@ plan_wqp_pull <- function(partitions_ind) {
     log='1_wqp_pull/log')
   partitions <- feather::read_feather(scipiper::sc_retrieve(partitions_ind))
 
-  # after all wanted data have been pulled, this function will be called but
-  # doesn't need to create anything much, so just return NULL
-  if(nrow(partitions) == 0) {
-    message('WQP pull is up to date, so setting task plan to NULL')
-    return(NULL)
-  }
-
   # isolate the partition info for just one task
   partition <- scipiper::create_task_step(
     step_name = 'partition',
@@ -122,12 +115,12 @@ get_wqp_data <- function(ind_file, partition, wqp_pull_params) {
 
   # prepare the arguments to pass to readWQPdata
   wqp_args <- wqp_pull_params
-  wqp_args$characteristicName <- wqp_pull_params$characteristicName[[partition$ParamGroup[1]]]
+  wqp_args$characteristicName <- as.character(unlist(wqp_pull_params$characteristicName))
   wqp_args$siteid <- partition$MonitoringLocationIdentifier
 
   # do the data pull
   wqp_dat_time <- system.time({
-    wqp_dat <- do.call(dataRetrieval::readWQPdata, wqp_args)
+    wqp_dat <- do.call(dataRetrieval::readWQPdata, wqp_args[c('siteid', 'characteristicName')])
   })
   message(sprintf(
     'WQP pull for %s took %0.0f seconds and returned %d rows',
