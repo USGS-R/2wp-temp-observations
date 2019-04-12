@@ -36,7 +36,7 @@ inventory_wqp <- function(inv_ind, wqp_pull_params) {
   wqp_args$characteristicName <- as.character(unlist(wqp_args$characteristicName))
   
   # add a test huc for now
-  wqp_args$huc <- '02040205'
+  wqp_args$huc <- c('02040205', '05010002')
   
   # only filter using characteristic names (and huc for test)
   wqp_dat <- wqp_call(whatWQPdata, wqp_args[c('characteristicName', 'huc')])
