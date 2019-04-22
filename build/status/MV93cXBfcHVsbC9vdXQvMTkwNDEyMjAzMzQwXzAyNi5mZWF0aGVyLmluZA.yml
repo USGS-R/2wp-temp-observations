@@ -1,0 +1,12 @@
+version: 0.3.0
+name: 1_wqp_pull/out/190412203340_026.feather.ind
+type: file
+hash: 0ab870f47bf6a8aef0486dc3be2b4b4c
+time: 2019-04-15 16:27:14 UTC
+depends:
+  1_wqp_pull/tmp/190412203340_026.rds.tind: 95dd90e93230dfa87d2703a98d5a8057
+fixed: 7322ee1f01664c17b0116d4a0e087906
+code:
+  functions:
+    extract_post_wqp_data: 45a2579a6ee9621f0492622c0c1ca362
+

@@ -1,0 +1,11 @@
+version: 0.3.0
+name: 1_wqp_pull/tmp/190412203340_171.ind
+type: file
+hash: 298ec3b17fbc030ffcb5cb1bebd6dae4
+time: 2019-04-16 16:02:36 UTC
+depends:
+  1_wqp_pull/out/190412203340_171.feather.ind: 3bc3d7c98695e6814c31b94ae0d7746b
+fixed: b527cc26c751d41e9da0b786d8c4146b
+code:
+  functions: {}
+
