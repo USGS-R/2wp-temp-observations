@@ -4,6 +4,7 @@ library(feather)
 library(rgdal)
 library(geosphere)
 library(dplyr)
+library(raster)
 library(sf)
 
 #' @param sites the file path for an inventory file with MonitoringLocationIdentifier, latitude, and longitude at a minimum
@@ -64,13 +65,10 @@ getNearestSegment <- function(sites, reaches, layerName=NULL, isGDB=FALSE){
   }
 
   ## get the monitoring Location Identifier from the site coords
-  for (i in 1:nrow(dist.df)) {
-    subset <- sitesToMatch %>% filter(latitude==dist.df$site.lat[i] & longitude==dist.df$site.lon[i])
-    dist.df$monitoringLocationIdentifier[i] <- subset$MonitoringLocationIdentifier                                      
-  }
+  dist.df <- dplyr::left_join(dist.df, sitesToMatch, by = c("site.lat" = "latitude", "site.lon" = "longitude"))
   
   ## remove unnecessary columns
-  dist.df <- select(dist.df, monitoringLocationIdentifier, reachId)
+  dist.df <- dplyr::select(dist.df, MonitoringLocationIdentifier, reachId)
   
   return(dist.df)
 }
