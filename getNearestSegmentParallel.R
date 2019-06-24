@@ -83,10 +83,10 @@ getNearestSegment <- function(sites, reaches, layerName=NULL, isGDB=FALSE){
   distBind <- do.call("rbind", distParts)
 
   ## get the monitoring Location Identifier from the site coords
-  dist.df <- dplyr::left_join(dist.df, sitesToMatch, by = c("site.lat" = "latitude", "site.lon" = "longitude"))
+  distBind <- dplyr::left_join(distBind, sitesToMatch, by = c("site.lat" = "latitude", "site.lon" = "longitude"))
   
   ## remove unnecessary columns
-  dist.df <- dplyr::select(dist.df, MonitoringLocationIdentifier, reachId)
+  distBind <- dplyr::select(distBind, MonitoringLocationIdentifier, reachId)
   
-  return(dist.df)
+  return(distBind)
 }
