@@ -1,5 +1,4 @@
 library(scipiper)
-library(data.table)
 library(feather)
 library(rgdal)
 library(geosphere)
@@ -57,9 +56,12 @@ getNearestSegment <- function(sites, reaches, layerName=NULL, isGDB=FALSE){
   drops <- c("OrganizationIdentifier","MonitoringLocationIdentifier", "ResolvedMonitoringLocationTypeName", "StateName", "CountyName", "HUCEightDigitCode", "resultCount")
   init_coords <- points_subset[,!(names(points_subset) %in% drops)]
   
+  ## for testing only
+  init_coords <- init_coords[sample(nrow(init_coords), 200), ]
+  
   ## parallel set up
   no_cores <- detectCores() - 1
-  n <- 1000
+  n <- 100
   parts <- split(1:nrow(init_coords), cut(1:nrow(init_coords), n))
   cl <- makeCluster(no_cores, type = "FORK")
   print(cl)
@@ -73,7 +75,7 @@ getNearestSegment <- function(sites, reaches, layerName=NULL, isGDB=FALSE){
                                        dist.df <- as.data.frame(dist)
                                        dist.df$site.lat <- init_coords@data$latitude[parts[[x]]]
                                        dist.df$site.lon <- init_coords@data$longitude[parts[[x]]]
-                                       dist.df$reachId <- reachLayer[, ]@lines[[dist.df$ID[parts[[x]]]]]@ID
+                                       dist.df$reachId <- reachLayer@data$seg_id_nat[parts[[x]]]
                                        colnames(dist.df) <- c("distance", "lon", "lat", "ID", "site.lat", "site.lon", "reachId")
                                        gc(verbose = FALSE) # free memory
                                        return(dist.df)
@@ -84,7 +86,7 @@ getNearestSegment <- function(sites, reaches, layerName=NULL, isGDB=FALSE){
 
   ## get the monitoring Location Identifier from the site coords
   distBind <- dplyr::left_join(distBind, sitesToMatch, by = c("site.lat" = "latitude", "site.lon" = "longitude"))
-  
+
   ## remove unnecessary columns
   distBind <- dplyr::select(distBind, MonitoringLocationIdentifier, reachId)
   
