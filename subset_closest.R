@@ -3,6 +3,7 @@ library(scipiper)
 library(data.table)
 library(feather)
 library(dplyr)
+library(raster)
 library(rgdal)
 library(sf)
 
