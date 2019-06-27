@@ -12,7 +12,7 @@ library(sf)
 #' @param isGDB boolean TRUE if the reaches file is a gdb, FALSE if it is a shapefile
 #' reaches <- "C:/Users/mhines/Downloads/delaware_stream_temp_by_segment/delaware_segments/delaware_segments.shp"
 #' sites <- "1_wqp_pull/inout/wqp_inventory.feather.ind"
-subset_closest <- function(reachLayer, sites, layerName=NULL, isGDB=FALSE){
+subset_closest <- function(reaches, sites, layerName=NULL, isGDB=FALSE){
   ## read in site data
   featherPath <- gd_get(sites)
   sitesToMatch <- read_feather(featherPath, columns = NULL)
