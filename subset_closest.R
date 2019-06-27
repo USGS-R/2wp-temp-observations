@@ -66,13 +66,22 @@ subset_closest <- function(reachLayer, sites, layerName=NULL, isGDB=FALSE){
   reach.pts <- SpatialPoints(coords = box.cent, proj4string = CRS(proj4string(reachLayer)))
   tree <- createTree(coordinates(reach.pts))
   inds <- c()
-  for (sp in sites){
-    inds <- c(inds, knnLookup(tree, newx = sites$lon, newy=sites$lat, k=1))
+ 
+  inds <- knnLookup(tree, newx = sites$lon, newy=sites$lat, k=1)
+
+  inds.df <- as.data.frame(inds)
+  for (i in 1:nrow(inds.df)) {
+    inds.df$reachId[i] <- reachLayer@data$seg_id_nat[inds.df[i,1]]
+    inds.df$site.lat[i] <- sites$lat[i]
+    inds.df$site.lon[i] <- sites$lon[i]
   }
-  inds <- unique(inds) %>% as.vector()
   
-  temp <- reachLayer[inds, ]
+  ## get the monitoring Location Identifier from the site coords
+  inds.df <- dplyr::left_join(inds.df, sitesToMatch, by = c("site.lat" = "latitude", "site.lon" = "longitude"))
   
-  return(reachLayer[inds, ])
+  ## remove unnecessary columns
+  inds.df <- dplyr::select(inds.df, MonitoringLocationIdentifier, reachId)
+  
+  return(inds.df)
   
 }
