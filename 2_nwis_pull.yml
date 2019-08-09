@@ -1,0 +1,37 @@
+target_default: 2_nwis_pull
+
+packages:
+  - dataRetrieval
+  - yaml
+  - maps
+  - ggplot2
+  - ggthemes
+  - scipiper
+  - dplyr
+  
+sources:
+  - 2_nwis_pull/src/inventory_nwis.R
+  - lib/src/require_local.R
+  
+targets:
+  2_nwis_pull:
+    depends:
+      - 2_nwis_pull/inout/nwis_dv_inventory.feather.ind
+      
+# -- get a CONUS inventory of available data for download -- #
+
+  nwis_pull_parameters:
+    command: yaml.load_file('2_nwis_pull/cfg/nwis_pull_params.yml')
+    
+  # -- get inventory of observations available to download -- #
+
+  # get inventory of samples available on nwis
+  # currently subsetted to a single huc for testing
+  # only filters by characteristicNames, and pulls all at the same time
+  2_nwis_pull/inout/nwis_dv_inventory.feather.ind:
+    command: inventory_nwis(inv_ind = target_name,
+      nwis_pull_params = nwis_pull_parameters, 
+      service = I('dv'))
+      
+  2_nwis_pull/inout/nwis_dv_inventory.feather:
+    command: gd_get('2_nwis_pull/inout/nwis_dv_inventory.feather.ind')
