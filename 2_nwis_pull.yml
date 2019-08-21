@@ -14,6 +14,9 @@ sources:
   - lib/src/require_local.R
   - 2_nwis_pull/src/nwis_pull.R
   - 2_nwis_pull/src/compare_nwis_services.R
+  - 2_nwis_pull/src/nwis_partition.R
+
+  
   
 targets:
   2_nwis_pull:
@@ -86,14 +89,13 @@ targets:
     command: plan_nwis_pull(partitions_ind='2_nwis_pull/inout/nwis_dv_partition.feather.ind',
       service = I('dv'))
 
-  2_nwis_pull_tasks.yml:
-    command: create_wqp_pull_makefile(makefile=target_name, task_plan=nwis_dv_pull_plan,
+  2_nwis_dv_pull_tasks.yml:
+    command: create_nwis_pull_makefile(makefile=target_name, task_plan=nwis_dv_pull_plan,
       final_targets = I('2_nwis_pull/out/nwis_dv_data.rds.ind'))
 
-  # run the data pulls
-  #6_temp_wqp_fetch/out/wqp_temperature_data.rds.ind:
-  #  command: loop_tasks(task_plan=wqp_temp_pull_plan, task_makefile='6_temp_wqp_fetch_tasks.yml',
-  #    num_tries=I(30), sleep_on_error=I(20))
+  2_nwis_pull/out/nwis_dv_data.rds.ind:
+    command: loop_tasks(task_plan=nwis_dv_pull_plan, task_makefile='2_nwis_dv_pull_tasks.yml',
+      num_tries=I(30), sleep_on_error=I(20))
       
   
   
