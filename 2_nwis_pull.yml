@@ -21,9 +21,8 @@ sources:
 targets:
   2_nwis_pull:
     depends:
-      - 2_nwis_pull/inout/nwis_dv_partition.feather.ind
-      - 2_nwis_pull/inout/nwis_uv_partition.feather.ind
-      - 2_nwis_pull/out/nwis_compare_services.feather.ind
+      - 2_nwis_pull/out/nwis_dv_data.rds.ind
+      - 2_nwis_pull/out/nwis_uv_data.rds.ind
       
 # -- get a CONUS inventory of available data for download -- #
 
@@ -83,8 +82,10 @@ targets:
     
   # -- create and execute tasks from pull table -- #
 
-  # prepare a remake-style plan for running each state as a separate
-  # remake target in a separate remake file (tasks_1_wqp.yml)
+  # prepare a remake-style plan for running each partition as a separate
+  # remake target in a separate remake file
+  
+  #dv
   nwis_dv_pull_plan:
     command: plan_nwis_pull(partitions_ind='2_nwis_pull/inout/nwis_dv_partition.feather.ind',
       service = I('dv'))
@@ -95,6 +96,19 @@ targets:
 
   2_nwis_pull/out/nwis_dv_data.rds.ind:
     command: loop_tasks(task_plan=nwis_dv_pull_plan, task_makefile='2_nwis_dv_pull_tasks.yml',
+      num_tries=I(30), sleep_on_error=I(20))
+      
+  #uv
+  nwis_uv_pull_plan:
+    command: plan_nwis_pull(partitions_ind='2_nwis_pull/inout/nwis_uv_partition.feather.ind',
+      service = I('uv'))
+
+  2_nwis_uv_pull_tasks.yml:
+    command: create_nwis_pull_makefile(makefile=target_name, task_plan=nwis_uv_pull_plan,
+      final_targets = I('2_nwis_pull/out/nwis_uv_data.rds.ind'))
+
+  2_nwis_pull/out/nwis_uv_data.rds.ind:
+    command: loop_tasks(task_plan=nwis_uv_pull_plan, task_makefile='2_nwis_uv_pull_tasks.yml',
       num_tries=I(30), sleep_on_error=I(20))
       
   
