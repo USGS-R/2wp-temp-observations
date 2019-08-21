@@ -38,9 +38,9 @@ plan_nwis_pull <- function(partitions_ind, service) {
       paste(
         "get_nwis_data(",
         "data_file=target_name,",
-        paste0("service = ", service),
+        paste0("service = I('", service, "'),"),
         sprintf("partition=%s,", steps$partition$target_name),
-        sprintf("nwis_pull_params=%s)"),
+       "nwis_pull_params = nwis_pull_parameters)",
         sep="\n      ")
     }
   )
@@ -103,6 +103,7 @@ get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbo
 
   nwis_pull_params$service <- service
   nwis_pull_params$site <- partition$site_no
+  nwis_pull_params$endDate <- Sys.Date()
   
   if (service == 'dv') { nwis_pull_params$statCd <- '00003' }
   
