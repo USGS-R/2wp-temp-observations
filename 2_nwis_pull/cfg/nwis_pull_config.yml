@@ -1,0 +1,3 @@
+# Approximate maximum number of records to pull in each call to NWIS
+# Pulled this recommendation from here: https://github.com/USGS-R/nawqa_wqp/blob/master/1_nwisdata/cfg/nwis_pull.yml
+target_pull_size: 250000
