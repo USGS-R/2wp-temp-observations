@@ -3,3 +3,6 @@
 parameterCd:
   - "00010"
   
+startDate:
+  - "1980-01-01"
+  
