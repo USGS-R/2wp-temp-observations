@@ -1,0 +1,13 @@
+version: 0.3.0
+name: 2_nwis_pull/inout/nwis_dv_partition.feather.ind
+type: file
+hash: 21687d5de881d0df0edcfbab424f5912
+time: 2019-08-21 17:24:35 UTC
+depends:
+  2_nwis_pull/inout/nwis_dv_inventory.feather.ind: ff1edb05f61c8b1582ec3ac81c89f106
+  nwis_pull_size: bf6a897122707e205d7ad26fc0132080
+fixed: 4679fb1ac3904ee445bbc34f4a62eb19
+code:
+  functions:
+    partition_inventory: 26dadd80af8f23e2916371f2de5dd1ae
+
