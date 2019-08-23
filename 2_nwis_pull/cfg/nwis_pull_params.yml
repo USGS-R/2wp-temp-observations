@@ -4,7 +4,7 @@ parameterCd:
   - "00010"
   
 startDate:
-  - "1851-01-01"
+  - "1900-01-01"
   
 endDate:
   - ""
