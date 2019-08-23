@@ -63,6 +63,7 @@ create_nwis_pull_makefile <- function(makefile, task_plan, final_targets) {
   create_task_makefile(
     makefile=makefile, task_plan=task_plan,
     include = c('2_nwis_pull.yml'),
+    sources = '2_nwis_pull/src/nwis_pull.R',
     packages=c('dplyr', 'dataRetrieval', 'feather', 'scipiper', 'yaml', 'stringr'),
     file_extensions=c('ind','feather'), finalize_funs = 'combine_nwis_data', final_targets = final_targets)
 }
@@ -76,14 +77,12 @@ combine_nwis_data <- function(ind_file, ...){
 
 
   for (i in seq_len(length(rds_files))){
-    
-    
+  
     temp_dat <- readRDS(rds_files[i]) 
     
     reduced_dat <- choose_temp_column(temp_dat)
     
     df_list[[i]] <- reduced_dat
-
   }
   
   nwis_df <- do.call("bind_rows", df_list)
@@ -164,7 +163,8 @@ choose_temp_column <- function(temp_dat) {
     slice(which.max(count_nu))
   
   # reduce the data down to those site-top col combos
-  reduced_dat <- inner_join(all_dat, select(top_cols, site_no, col_name))
+  reduced_dat <- inner_join(all_dat, select(top_cols, site_no, col_name)) %>%
+    distinct()
   
   return(reduced_dat)
 }
