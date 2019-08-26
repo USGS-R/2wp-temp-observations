@@ -18,7 +18,7 @@ plan_nwis_pull <- function(partitions_ind, service) {
   partition <- scipiper::create_task_step(
     step_name = 'partition',
     target_name = function(task_name, step_name, ...) {
-      sprintf('partition_%s', task_name)
+      sprintf('%s_partition_%s', service, task_name)
     },
     command = function(task_name, ...) {
       sprintf("filter_partitions(partitions_ind='%s', I('%s'))", partitions_ind, task_name)
@@ -32,7 +32,7 @@ plan_nwis_pull <- function(partitions_ind, service) {
   download <- scipiper::create_task_step(
     step_name = 'download',
     target_name = function(task_name, step_name, ...) {
-      file.path(folders$tmp, sprintf('%s.rds', task_name))
+      file.path(folders$tmp, sprintf('%s_%s.rds', service, task_name))
     },
     command = function(steps, ...) {
       paste(
@@ -111,8 +111,7 @@ get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbo
 
   nwis_pull_params$service <- service
   nwis_pull_params$site <- partition$site_no
-  nwis_pull_params$endDate <- Sys.Date()
-  
+
   if (service == 'dv') { nwis_pull_params$statCd <- '00003' }
   
   # do the data pull
