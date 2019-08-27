@@ -4,6 +4,10 @@ inventory_nwis <- function(inv_ind, nwis_pull_params, service) {
   nwis_pull_params$service <- service
   nwis_pull_params$statCd <- '00003'
   
+  # what NWIS data does not accept start/end dates
+  nwis_pull_params$startDate <- NULL
+  nwis_pull_params$endDate <- NULL
+  
   all_dat <- data.frame()
   for(huc in hucs){
     nwis_pull_params$huc = huc

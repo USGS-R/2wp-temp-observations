@@ -1,0 +1,12 @@
+version: 0.3.0
+name: 2_nwis_pull/inout/nwis_dv_inventory.feather.ind
+type: file
+hash: 1cb60dc59e4be29ed2f39d29637c175f
+time: 2019-08-23 20:45:52 UTC
+depends:
+  nwis_pull_parameters: 83331e0721302dd8d77f8ba984ad0e1a
+fixed: 9d698da59c8ce8b6b3fa4523906ea38d
+code:
+  functions:
+    inventory_nwis: 57e1abf526f1d996562eeb4a52fe26bd
+

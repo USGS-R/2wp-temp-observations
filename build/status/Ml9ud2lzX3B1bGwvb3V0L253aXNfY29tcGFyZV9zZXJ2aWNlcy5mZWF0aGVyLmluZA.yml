@@ -1,0 +1,13 @@
+version: 0.3.0
+name: 2_nwis_pull/out/nwis_compare_services.feather.ind
+type: file
+hash: eda113664a8b09decd14b802036eaeb1
+time: 2019-08-23 15:21:53 UTC
+depends:
+  2_nwis_pull/inout/nwis_dv_inventory.feather.ind: ff1edb05f61c8b1582ec3ac81c89f106
+  2_nwis_pull/inout/nwis_uv_inventory.feather.ind: e33ee7dcc3d6e9228c75c292ceb2dc46
+fixed: ec2664904c90a3b24a70ed58da73a2dc
+code:
+  functions:
+    compare_services: 5b3d393df8f6f09891f31c6d6ceff9bb
+
