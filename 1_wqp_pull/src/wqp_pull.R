@@ -111,35 +111,31 @@ filter_partitions <- function(partitions_ind, pull_task) {
 }
 
 # pull a batch of WQP observations, save locally, return .tind file
-get_wqp_data <- function(ind_file, partition, wqp_pull_params) {
-
+get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = FALSE) {
+  
   # prepare the arguments to pass to readWQPdata
-  wqp_args <- wqp_pull_params
-  wqp_args$characteristicName <- as.character(unlist(wqp_pull_params$characteristicName))
+  wqp_args <- list()
+  wqp_args$characteristicName <- wqp_pull_params
   wqp_args$siteid <- partition$MonitoringLocationIdentifier
-
   # do the data pull
   wqp_dat_time <- system.time({
-    wqp_dat <- do.call(dataRetrieval::readWQPdata, wqp_args[c('siteid', 'characteristicName')])
+    wqp_dat <- wqp_POST(wqp_args)
   })
-  message(sprintf(
-    'WQP pull for %s took %0.0f seconds and returned %d rows',
-    partition$PullTask[1],
-    wqp_dat_time['elapsed'],
-    nrow(wqp_dat)))
-
+  if (verbose){
+    message(sprintf(
+      'WQP pull for %s took %0.0f seconds and returned %d rows',
+      partition$PullTask[1],
+      wqp_dat_time['elapsed'],
+      nrow(wqp_dat)))
+  }
   # make wqp_dat a tibble, converting either from data.frame (the usual case) or
   # NULL (if there are no results)
   wqp_dat <- as_data_frame(wqp_dat)
-
-  # write the data and temporary indicator file. do this even if there were 0
+  
+  # write the data to rds file. do this even if there were 0
   # results because remake expects this function to always create the target
   # file
-  data_file <- scipiper::as_data_file(ind_file, ind_ext='tind')
   saveRDS(wqp_dat, data_file)
-  sc_indicate(ind_file, data_file=data_file)
-
-  invisible()
 }
 
 extract_post_wqp_data <- function(ind_file, wqp_ind) {
@@ -152,4 +148,37 @@ extract_post_wqp_data <- function(ind_file, wqp_ind) {
   # write locally as feather, which strips the attributes, and post to drive
   feather::write_feather(wqp_dat, path=as_data_file(ind_file))
   gd_put(ind_file)
+}
+
+# hack around w/ https://github.com/USGS-R/dataRetrieval/issues/434
+wqp_POST <- function(wqp_args_list){
+  wqp_url <- "https://www.waterqualitydata.us/Result/search"
+  
+  
+  wqp_args_list$siteid <- wqp_args_list$siteid
+  post_body = jsonlite::toJSON(wqp_args_list, pretty = TRUE)
+  
+  
+  x <- POST(paste0(wqp_url,"?mimeType=csv"),
+            body = post_body,
+            content_type("application/json"),
+            accept("text/csv"))
+  
+  returnedDoc <- content(x,
+                         type="text",
+                         encoding = "UTF-8")
+  retval <- suppressWarnings(read_delim(returnedDoc,
+                                        col_types = cols(`ActivityStartTime/Time` = col_character(),
+                                                         `ActivityEndTime/Time` = col_character(),
+                                                         USGSPCode = col_character(),
+                                                         ResultCommentText=col_character(),
+                                                         `ActivityDepthHeightMeasure/MeasureValue` = col_number(),
+                                                         `DetectionQuantitationLimitMeasure/MeasureValue` = col_number(),
+                                                         ResultMeasureValue = col_number(),
+                                                         `WellDepthMeasure/MeasureValue` = col_number(),
+                                                         `WellHoleDepthMeasure/MeasureValue` = col_number(),
+                                                         `HUCEightDigitCode` = col_character(),
+                                                         `ActivityEndTime/TimeZoneCode` = col_character()),
+                                        quote = "", delim = ","))
+  return(retval)
 }
