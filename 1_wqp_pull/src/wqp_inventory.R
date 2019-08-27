@@ -38,16 +38,12 @@ inventory_wqp <- function(inv_ind, wqp_pull_params) {
   # only filter using characteristic names (and huc for test)
   wqp_dat <- wqp_call(whatWQPdata, wqp_args['characteristicName'])
   
-  # extract coordinates
-  coords <- data.frame(matrix(unlist(wqp_dat$out$coordinates), nrow = length(wqp_dat$out$coordinates), byrow = T))
-  
   # keep columns of interest, put back lat/long
   # keeping lat/long here in case there was a situation where you'd want to 
   # take stock/map sites before pulling data
   dat_out <- wqp_dat$out %>%
-    mutate(latitude = coords$X2, longitude = coords$X1) %>%
     select(OrganizationIdentifier, MonitoringLocationIdentifier, ResolvedMonitoringLocationTypeName, 
-           StateName, CountyName, HUCEightDigitCode, latitude, longitude, resultCount)
+           StateName, CountyName, HUCEightDigitCode, latitude = lat, longitude = lon, resultCount)
   
   # spit out nrows and time it took to get inventory
   message(sprintf('sample inventory complete, required %0.2f hours to retrieve %d rows', wqp_dat$time/(60*60), wqp_dat$nrow))
@@ -87,7 +83,15 @@ partition_wqp_inventory <- function(partitions_ind, wqp_pull_params, inventory_i
   wqp_inventory <- wqp_inventory %>%
     filter(!(ResolvedMonitoringLocationTypeName %in% wqp_pull_params$DropLocationTypeName))
   
+  # filter out bad org names
+  bad_orgs <- grep(' |\\.|/', wqp_inventory$OrganizationIdentifier, value = TRUE)
+  bad_orgs_sites <- filter(wqp_inventory, OrganizationIdentifier %in% bad_orgs)
   
+  if (nrow(bad_orgs_sites) > 0){
+    message(sprintf("**dropping %s sites and %s results due to bad MonIDs", nrow(bad_orgs_sites), sum(bad_orgs_sites$resultCount)))
+  }
+  
+  wqp_inventory <- filter(wqp_inventory, !OrganizationIdentifier %in% bad_orgs)
   
   # Define the atomic_groups to use in setting up data pull partitions. An
   # atomic group is a combination of parameters that can't be reasonably split
