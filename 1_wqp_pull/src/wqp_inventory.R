@@ -35,11 +35,8 @@ inventory_wqp <- function(inv_ind, wqp_pull_params) {
   # collapse all constituents into single vector
   wqp_args$characteristicName <- as.character(unlist(wqp_args$characteristicName))
   
-  # add a test huc for now
-  wqp_args$huc <- c('02040205', '05010002')
-  
   # only filter using characteristic names (and huc for test)
-  wqp_dat <- wqp_call(whatWQPdata, wqp_args[c('characteristicName', 'huc')])
+  wqp_dat <- wqp_call(whatWQPdata, wqp_args['characteristicName'])
   
   # extract coordinates
   coords <- data.frame(matrix(unlist(wqp_dat$out$coordinates), nrow = length(wqp_dat$out$coordinates), byrow = T))

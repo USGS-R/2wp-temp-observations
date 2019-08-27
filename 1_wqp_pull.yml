@@ -52,7 +52,7 @@ targets:
 # -- pull data! -- #
 
   # prepare a remake-style plan for running each state as a separate
-  # remake target in a separate remake file (tasks_1_wqp.yml)
+  # remake target in a separate remake file (1_wqp_wqp_tasks.yml)
   wqp_pull_plan:
     command: plan_wqp_pull(partitions_ind='1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
   
