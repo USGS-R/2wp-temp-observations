@@ -15,7 +15,7 @@ sources:
   - 2_nwis_pull/src/nwis_pull.R
   - 2_nwis_pull/src/compare_nwis_services.R
   - 2_nwis_pull/src/nwis_partition.R
-  
+
 targets:
   2_nwis_pull:
     depends:
