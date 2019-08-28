@@ -35,30 +35,14 @@ plan_wqp_pull <- function(partitions_ind) {
   download <- scipiper::create_task_step(
     step_name = 'download',
     target_name = function(task_name, step_name, ...) {
-      scipiper::as_ind_file(file.path(folders$tmp, sprintf('%s.rds', task_name)), ind_ext='tind')
+      file.path(folders$tmp, sprintf('%s.rds', task_name))
     },
     command = function(steps, ...) {
       paste(
         "get_wqp_data(",
-        "ind_file=target_name,",
+        "data_file=target_name,",
         sprintf("partition=%s,", steps$partition$target_name),
         "wqp_pull_params=wqp_pull_parameters)",
-        sep="\n      ")
-    }
-  )
-
-  # extract and post the data (dropping the site info attribute), creating an
-  # .ind file that we will want to share because it represents the shared cache
-  extract_post_data <- scipiper::create_task_step(
-    step_name = 'extract_post_data',
-    target_name = function(task_name, step_name, ...) {
-      scipiper::as_ind_file(file.path(folders$out, sprintf('%s.feather', task_name)))
-    },
-    command = function(steps, ...) {
-      paste(
-        "extract_post_wqp_data(",
-        "ind_file=target_name,",
-        sprintf("wqp_ind='%s')", steps$download$target_name),
         sep="\n      ")
     }
   )
@@ -66,14 +50,13 @@ plan_wqp_pull <- function(partitions_ind) {
   # put the steps together into a task plan
   task_plan <- scipiper::create_task_plan(
     task_names=sort(partitions$PullTask),
-    task_steps=list(partition, download, extract_post_data),
-    final_steps=c('extract_post_data'),
-    add_complete=TRUE,
-    ind_dir=folders$tmp)
+    task_steps=list(partition, download),
+    final_steps=c('download'),
+    add_complete=FALSE)
 
 }
 
-create_wqp_pull_makefile <- function(makefile, task_plan) {
+create_wqp_pull_makefile <- function(makefile, task_plan, final_targets) {
 
   # after all wanted data have been pulled, this function will be called but
   # doesn't need to create anything much, so just write an empty file
@@ -84,11 +67,13 @@ create_wqp_pull_makefile <- function(makefile, task_plan) {
   }
 
   create_task_makefile(
-    makefile=makefile, task_plan=task_plan,
-    include='1_wqp_pull.yml',
-    packages=c('dplyr', 'dataRetrieval', 'feather', 'scipiper', 'yaml'),
-    file_extensions=c('ind','tind','feather'),
-    ind_complete=TRUE, ind_dir='1_wqp_pull/log')
+    makefile = makefile, 
+    task_plan = task_plan,
+    include = '1_wqp_pull.yml',
+    packages = c('dplyr', 'dataRetrieval', 'feather', 'scipiper', 'yaml', 'httr', 'readr'),
+    file_extensions = c('ind','rds'),
+    final_targets = final_targets, 
+    finalize_funs = 'combine_wqp_dat')
 }
 
 loop_wqp_tasks <- function(ind_file, task_plan, ...) {
@@ -115,7 +100,7 @@ get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = FALSE)
   
   # prepare the arguments to pass to readWQPdata
   wqp_args <- list()
-  wqp_args$characteristicName <- wqp_pull_params
+  wqp_args$characteristicName <- wqp_pull_params$characteristicName$temperature
   wqp_args$siteid <- partition$MonitoringLocationIdentifier
   # do the data pull
   wqp_dat_time <- system.time({
@@ -137,19 +122,6 @@ get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = FALSE)
   # file
   saveRDS(wqp_dat, data_file)
 }
-
-extract_post_wqp_data <- function(ind_file, wqp_ind) {
-  # read in the WQP data pull results, which must have been produced on this
-  # computer (we roughly guarantee this by depending on ind_file and yet not
-  # git-committing that ind_file, so the WQP-pulling computer is the only one
-  # that could have the data file)
-  wqp_dat <- readRDS(scipiper::as_data_file(wqp_ind, ind_ext='tind'))
-
-  # write locally as feather, which strips the attributes, and post to drive
-  feather::write_feather(wqp_dat, path=as_data_file(ind_file))
-  gd_put(ind_file)
-}
-
 # hack around w/ https://github.com/USGS-R/dataRetrieval/issues/434
 wqp_POST <- function(wqp_args_list){
   wqp_url <- "https://www.waterqualitydata.us/Result/search"
@@ -181,4 +153,22 @@ wqp_POST <- function(wqp_args_list){
                                                          `ActivityEndTime/TimeZoneCode` = col_character()),
                                         quote = "", delim = ","))
   return(retval)
+}
+
+# extract and post the data (dropping the site info attribute), creating an
+# .ind file that we will want to share because it represents the shared cache
+combine_wqp_data <- function(ind_file, ...){
+  
+  rds_files <- c(...)
+  df_list <- list()
+  
+  for (i in seq_len(length(rds_files))){
+    df_list[[i]] <- readRDS(rds_files[i])
+  }
+  
+  wqp_df <- do.call("rbind", df_list)
+  
+  data_file <- scipiper::as_data_file(ind_file)
+  saveRDS(wqp_df, data_file)
+  gd_put(ind_file, data_file)
 }
