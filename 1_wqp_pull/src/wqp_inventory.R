@@ -157,7 +157,7 @@ partition_wqp_inventory <- function(partitions_ind, wqp_pull_params, inventory_i
   partitions <- atomic_groups %>%
     mutate(
       PullDate = pull_time,
-      PullTask = sprintf('%s_%03d', pull_id, assignments)) %>%
+      PullTask = sprintf('%s_%04d', pull_id, assignments)) %>%
     left_join(select(wqp_inventory, MonitoringLocationIdentifier, SiteNumObs=resultCount), by='MonitoringLocationIdentifier') %>%
     select(MonitoringLocationIdentifier, SiteNumObs, PullTask, PullDate)
   
