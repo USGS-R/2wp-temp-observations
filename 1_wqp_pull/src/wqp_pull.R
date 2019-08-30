@@ -96,7 +96,7 @@ filter_partitions <- function(partitions_ind, pull_task) {
 }
 
 # pull a batch of WQP observations, save locally, return .tind file
-get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = FALSE) {
+get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = TRUE) {
   
   # prepare the arguments to pass to readWQPdata
   wqp_args <- list()
@@ -106,6 +106,9 @@ get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = FALSE)
   wqp_dat_time <- system.time({
     wqp_dat <- wqp_POST(wqp_args)
   })
+  
+  wqp_dr_dat_time <- system.time(dat_dr <- readWQPdata(siteid = wqp_args$siteid,
+                                                       characteristicName = wqp_args$characteristicName))
   if (verbose){
     message(sprintf(
       'WQP pull for %s took %0.0f seconds and returned %d rows',
@@ -130,28 +133,32 @@ wqp_POST <- function(wqp_args_list){
   wqp_args_list$siteid <- wqp_args_list$siteid
   post_body = jsonlite::toJSON(wqp_args_list, pretty = TRUE)
   
-  
-  x <- POST(paste0(wqp_url,"?mimeType=csv"),
+  temp <- tempfile()
+  temp <- paste0(temp,".zip")
+  x <- POST(paste0(wqp_url,"?mimeType=tsv&zip=yes"),
             body = post_body,
             content_type("application/json"),
-            accept("text/csv"))
+            accept("application/zip"),
+            httr::write_disk(temp))
   
-  returnedDoc <- content(x,
-                         type="text",
-                         encoding = "UTF-8")
-  retval <- suppressWarnings(read_delim(returnedDoc,
-                                        col_types = cols(`ActivityStartTime/Time` = col_character(),
-                                                         `ActivityEndTime/Time` = col_character(),
-                                                         USGSPCode = col_character(),
-                                                         ResultCommentText=col_character(),
-                                                         `ActivityDepthHeightMeasure/MeasureValue` = col_number(),
-                                                         `DetectionQuantitationLimitMeasure/MeasureValue` = col_number(),
-                                                         ResultMeasureValue = col_number(),
-                                                         `WellDepthMeasure/MeasureValue` = col_number(),
-                                                         `WellHoleDepthMeasure/MeasureValue` = col_number(),
-                                                         `HUCEightDigitCode` = col_character(),
-                                                         `ActivityEndTime/TimeZoneCode` = col_character()),
-                                        quote = "", delim = ","))
+  headerInfo <- httr::headers(x)
+  file1 <- tempdir()
+  doc <- utils::unzip(temp, exdir=file1)
+  unlink(temp)
+  retval1 <- suppressWarnings(read_delim(doc, 
+                                         col_types = cols(`ActivityStartTime/Time` = col_character(),
+                                                          `ActivityEndTime/Time` = col_character(),
+                                                          USGSPCode = col_character(),
+                                                          ResultCommentText=col_character(),
+                                                          `ActivityDepthHeightMeasure/MeasureValue` = col_number(),
+                                                          `DetectionQuantitationLimitMeasure/MeasureValue` = col_number(),
+                                                          ResultMeasureValue = col_number(),
+                                                          `WellDepthMeasure/MeasureValue` = col_number(),
+                                                          `WellHoleDepthMeasure/MeasureValue` = col_number(),
+                                                          `HUCEightDigitCode` = col_character(), 
+                                                          `ActivityEndTime/TimeZoneCode` = col_character()),
+                                         quote = "", delim = "\t"))
+  unlink(doc)
   return(retval)
 }
 
