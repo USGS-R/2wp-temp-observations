@@ -17,12 +17,14 @@ sources:
 targets:
   1_wqp_pull:
     depends:
-      - 1_wqp_pull/log/1_wqp_pull_tasks.ind
       
 # -- get a CONUS inventory of available data for download -- #
 
   wqp_pull_parameters:
     command: yaml.load_file('1_wqp_pull/cfg/wqp_pull_params.yml')
+    
+  wqp_partition_cfg:
+    command: yaml.load_file('1_wqp_pull/cfg/wqp_partition_config.yml')
     
   # -- get inventory of observations available to download -- #
 
@@ -44,12 +46,12 @@ targets:
       partitions_ind=target_name,
       wqp_pull_params = wqp_pull_parameters,
       inventory_ind='1_wqp_pull/inout/wqp_inventory.feather.ind',
-      wqp_partition_cfg=I('1_wqp_pull/cfg/wqp_partition_config.yml'))
+      wqp_partition_cfg=wqp_partition_cfg)
   
   1_wqp_pull/inout/wqp_pull_partitions.feather:
     command: gd_get('1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
     
-# -- pull data! -- #
+  # -- pull data! -- #
 
   # prepare a remake-style plan for running each state as a separate
   # remake target in a separate remake file (1_wqp_wqp_tasks.yml)
@@ -57,13 +59,16 @@ targets:
     command: plan_wqp_pull(partitions_ind='1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
   
   1_wqp_pull_tasks.yml:
-    command: create_wqp_pull_makefile(makefile=target_name, task_plan=wqp_pull_plan)
+    command: create_wqp_pull_makefile(makefile = target_name, 
+      task_plan = wqp_pull_plan,
+      final_targets = I('1_wqp_pull/out/wqp_data.rds.ind'))
 
   # run the data pulls
-  1_wqp_pull/log/1_wqp_pull_tasks.ind:
+  1_wqp_pull/out/wqp_data.rds.ind:
     command: loop_wqp_tasks(
       ind_file=target_name,
-      task_plan=wqp_pull_plan, task_makefile='1_wqp_pull_tasks.yml',
+      task_plan=wqp_pull_plan, 
+      task_makefile='1_wqp_pull_tasks.yml',
       num_tries=I(30), sleep_on_error=I(20))
 
 

@@ -103,22 +103,56 @@ get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = TRUE) 
   wqp_args$characteristicName <- wqp_pull_params$characteristicName$temperature
   wqp_args$siteid <- partition$MonitoringLocationIdentifier
   # do the data pull
-  wqp_dat_time <- system.time({
-    wqp_dat <- wqp_POST(wqp_args)
-  })
+  # first pull using readWQPdata, then if that fails, try POST
   
-  wqp_dr_dat_time <- system.time(dat_dr <- readWQPdata(siteid = wqp_args$siteid,
-                                                       characteristicName = wqp_args$characteristicName))
+ 
+  getWQP <- function(wqp_args) {
+    wqp_dat_time <- tryCatch(
+      {
+        # first try readWQPdata - as this seems to be the fastest
+        time_start <- Sys.time()
+        wqp_dat <- readWQPdata(siteid = wqp_args$siteid,
+                    characteristicName = wqp_args$characteristicName)
+        time_end <- Sys.time()
+        time_diff <- time_end - time_start
+        
+        return(list(time_diff, wqp_dat, 'readWQPdata'))
+      },
+      error = function(cond) {
+        message('Call to WQP using readWQPdata failed. Trying via POST. Originally error message:')
+        message(cond)
+        
+        time_start <- Sys.time()
+        wqp_dat <- wqp_POST(wqp_args)
+        time_end <- Sys.time()
+        time_diff <- time_end - time_start
+        
+        return(list(time_diff, wqp_dat, 'POST'))
+      }
+    )
+    return(wqp_dat_time)
+  }
+  
+  wqp_dat_time <- getWQP(wqp_args)
+  
+  # wqp_dat_time <- system.time({
+  #   wqp_dat <- wqp_POST(wqp_args)
+  # })
+  # 
+  # wqp_dr_dat_time <- system.time(dat_dr <- readWQPdata(siteid = wqp_args$siteid,
+  #                                                      characteristicName = wqp_args$characteristicName))
   if (verbose){
     message(sprintf(
-      'WQP pull for %s took %0.0f seconds and returned %d rows',
+      'WQP pull (using %s) for %s took %0.1f %s and returned %d rows',
+      wqp_dat_time[[3]],
       partition$PullTask[1],
-      wqp_dat_time['elapsed'],
-      nrow(wqp_dat)))
+      as.numeric(wqp_dat_time[[1]]),
+      attr(wqp_dat_time[[1]], 'units'),
+      nrow(wqp_dat_time[[2]])))
   }
   # make wqp_dat a tibble, converting either from data.frame (the usual case) or
   # NULL (if there are no results)
-  wqp_dat <- as_data_frame(wqp_dat)
+  wqp_dat <- as_tibble(wqp_dat_time[[2]])
   
   # write the data to rds file. do this even if there were 0
   # results because remake expects this function to always create the target
@@ -145,7 +179,7 @@ wqp_POST <- function(wqp_args_list){
   file1 <- tempdir()
   doc <- utils::unzip(temp, exdir=file1)
   unlink(temp)
-  retval1 <- suppressWarnings(read_delim(doc, 
+  retval <- suppressWarnings(read_delim(doc, 
                                          col_types = cols(`ActivityStartTime/Time` = col_character(),
                                                           `ActivityEndTime/Time` = col_character(),
                                                           USGSPCode = col_character(),
