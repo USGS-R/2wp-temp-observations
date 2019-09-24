@@ -70,5 +70,3 @@ targets:
       task_plan=wqp_pull_plan, 
       task_makefile='1_wqp_pull_tasks.yml',
       num_tries=I(30), sleep_on_error=I(20))
-
-

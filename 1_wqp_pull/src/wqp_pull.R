@@ -109,25 +109,26 @@ get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = TRUE) 
   getWQP <- function(wqp_args) {
     wqp_dat_time <- tryCatch(
       {
-        # first try readWQPdata - as this seems to be the fastest
-        time_start <- Sys.time()
-        wqp_dat <- readWQPdata(siteid = wqp_args$siteid,
-                    characteristicName = wqp_args$characteristicName)
-        time_end <- Sys.time()
-        time_diff <- time_end - time_start
-        
-        return(list(time_diff, wqp_dat, 'readWQPdata'))
-      },
-      error = function(cond) {
-        message('Call to WQP using readWQPdata failed. Trying via POST. Originally error message:')
-        message(cond)
-        
         time_start <- Sys.time()
         wqp_dat <- wqp_POST(wqp_args)
         time_end <- Sys.time()
         time_diff <- time_end - time_start
         
         return(list(time_diff, wqp_dat, 'POST'))
+       
+        
+      },
+      error = function(cond) {
+        message('Call to WQP using POST failed. Trying via readWQPdata. Original error message:')
+        message(cond)
+        
+        time_start <- Sys.time()
+        wqp_dat <- readWQPdata(siteid = wqp_args$siteid,
+                               characteristicName = wqp_args$characteristicName)
+        time_end <- Sys.time()
+        time_diff <- time_end - time_start
+        
+        return(list(time_diff, wqp_dat, 'readWQPdata'))
       }
     )
     return(wqp_dat_time)
