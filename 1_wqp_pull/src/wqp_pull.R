@@ -199,16 +199,22 @@ wqp_POST <- function(wqp_args_list){
 
 # extract and post the data (dropping the site info attribute), creating an
 # .ind file that we will want to share because it represents the shared cache
-combine_wqp_data <- function(ind_file, ...){
+combine_wqp_dat <- function(ind_file, ...){
   
   rds_files <- c(...)
   df_list <- list()
   
-  for (i in seq_len(length(rds_files))){
-    df_list[[i]] <- readRDS(rds_files[i])
+  # create a readRDS function that accomdates some column type issues
+  readRDS2 <- function(.) {
+    dat_mod <- readRDS(.) %>%
+      select_if(~!any(is.na(.)))
   }
   
-  wqp_df <- do.call("rbind", df_list)
+  for (i in seq_len(length(rds_files))){
+    df_list[[i]] <- readRDS2(rds_files[i])
+  }
+  
+  wqp_df <- do.call("bind_rows", df_list)
   
   data_file <- scipiper::as_data_file(ind_file)
   saveRDS(wqp_df, data_file)

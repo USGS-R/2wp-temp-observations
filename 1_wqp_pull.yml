@@ -17,6 +17,7 @@ sources:
 targets:
   1_wqp_pull:
     depends:
+      - 1_wqp_pull/out/wqp_data.rds.ind
       
 # -- get a CONUS inventory of available data for download -- #
 
@@ -70,3 +71,8 @@ targets:
       task_plan=wqp_pull_plan, 
       task_makefile='1_wqp_pull_tasks.yml',
       num_tries=I(30), sleep_on_error=I(20))
+    depends:
+      - 1_wqp_pull/src/wqp_pull.R
+      
+  1_wqp_pull/out/wqp_data.rds:
+    command: gd_get('1_wqp_pull/out/wqp_data.rds.ind')
