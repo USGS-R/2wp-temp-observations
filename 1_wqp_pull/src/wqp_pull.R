@@ -207,7 +207,7 @@ combine_wqp_dat <- function(ind_file, ...){
   # create a readRDS function that accomdates some column type issues
   readRDS2 <- function(.) {
     dat_mod <- readRDS(.) %>%
-      select_if(~!any(is.na(.)))
+      select_if(~!all(is.na(.)))
   }
   
   for (i in seq_len(length(rds_files))){
