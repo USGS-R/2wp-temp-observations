@@ -207,13 +207,26 @@ combine_wqp_dat <- function(ind_file, ...){
   # create a readRDS function that accomdates some column type issues
   readRDS2 <- function(.) {
     dat_mod <- readRDS(.) %>%
+      filter(!is.na(ResultMeasureValue)) %>%
+      select(MonitoringLocationIdentifier, ActivityMediaName, ActivityMediaSubdivisionName, ActivityStartDate, `ActivityStartTime/Time`, `ActivityStartTime/TimeZoneCode`,
+             `ActivityDepthHeightMeasure/MeasureValue`, `ActivityDepthHeightMeasure/MeasureUnitCode`,   
+            `ActivityTopDepthHeightMeasure/MeasureValue`,`ActivityTopDepthHeightMeasure/MeasureUnitCode`, 
+            `ActivityBottomDepthHeightMeasure/MeasureValue`, `ActivityBottomDepthHeightMeasure/MeasureUnitCode`,
+            ActivityCommentText, `SampleCollectionMethod/MethodIdentifier`, `SampleCollectionMethod/MethodIdentifierContext`,
+            `SampleCollectionMethod/MethodName`,ResultDetectionConditionText, CharacteristicName, ResultMeasureValue, 
+            `ResultMeasure/MeasureUnitCode`, MeasureQualifierCode,
+            ResultStatusIdentifier, StatisticalBaseCode, ResultValueTypeName, PrecisionValue, 
+            ResultCommentText, USGSPCode, `ResultDepthHeightMeasure/MeasureValue`, `ResultDepthHeightMeasure/MeasureUnitCode`, ProviderName) %>%
+      mutate(PrecisionValue = as.numeric(PrecisionValue)) %>%
+      mutate_at(vars(contains('MeasureValue')), is.numeric) %>%
+      mutate_if(is.logical, as.character) %>%
       select_if(~!all(is.na(.)))
   }
   
   for (i in seq_len(length(rds_files))){
     df_list[[i]] <- readRDS2(rds_files[i])
   }
-  
+  message('Binding all WQP files.')
   wqp_df <- do.call("bind_rows", df_list)
   
   data_file <- scipiper::as_data_file(ind_file)
