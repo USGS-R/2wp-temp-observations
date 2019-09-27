@@ -218,7 +218,7 @@ combine_wqp_dat <- function(ind_file, ...){
             ResultStatusIdentifier, StatisticalBaseCode, ResultValueTypeName, PrecisionValue, 
             ResultCommentText, USGSPCode, `ResultDepthHeightMeasure/MeasureValue`, `ResultDepthHeightMeasure/MeasureUnitCode`, ProviderName) %>%
       mutate(PrecisionValue = as.numeric(PrecisionValue)) %>%
-      mutate_at(vars(contains('MeasureValue')), is.numeric) %>%
+      mutate_at(vars(contains('MeasureValue')), as.numeric) %>%
       mutate_if(is.logical, as.character) %>%
       select_if(~!all(is.na(.)))
   }
