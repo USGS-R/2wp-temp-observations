@@ -1,0 +1,14 @@
+version: 0.3.0
+name: 5_data_munge/out/daily_temperatures.rds.ind
+type: file
+hash: b3074146b6bfe0831465b2121798c197
+time: 2019-10-01 15:43:52 UTC
+depends:
+  5_data_munge/out/nwis_dv_daily.rds.ind: 4cff839dbd456ca82f03220d9f6a40a8
+  5_data_munge/out/nwis_uv_daily.rds.ind: 56e6962f557071a7e094875b915e3b89
+  5_data_munge/out/wqp_daily_nodepths.rds.ind: e2d8227f1c21ad3dde6c2a6d10c13a55
+fixed: 8f477b7e950fc4190a2f937e706494e7
+code:
+  functions:
+    combine_all_dat: f056c99b386a1e106fa8dcef993eb434
+

@@ -1,0 +1,15 @@
+version: 0.3.0
+name: 5_data_munge/out/nwis_uv_daily.rds.ind
+type: file
+hash: 56e6962f557071a7e094875b915e3b89
+time: 2019-10-01 15:24:31 UTC
+depends:
+  2_nwis_pull/out/nwis_uv_data.rds.ind: 08b8d262ab8b9ed7b977c9a7adc75ba2
+  min_value: c96c32be843430ad3b4632edb49aee30
+  max_value: 8550904a2a45c13015a45b21ef719fb7
+  max_daily_range: afe39393dd5be2c095cd37fede5c5b89
+fixed: c2d9321667f7c1219e64e155aaa09685
+code:
+  functions:
+    munge_nwis_uv: b12c273a0a979c572223a10bfae0c8b4
+
