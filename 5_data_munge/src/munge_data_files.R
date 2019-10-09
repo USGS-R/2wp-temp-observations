@@ -31,20 +31,19 @@ munge_wqp_withdepths <- function(in_ind, min_value, max_value, max_daily_range, 
 
   # now reduce to daily measures
   dat_reduced <- dat %>%
-    filter(ResultMeasureValue > min_value) %>%
     filter(grepl('deg C|deg F', `ResultMeasure/MeasureUnitCode`, ignore.case = TRUE)) %>%
     mutate(ResultMeasureValue = ifelse(grepl('deg F', `ResultMeasure/MeasureUnitCode`, ignore.case = TRUE),
                                        f_to_c(ResultMeasureValue), ResultMeasureValue)) %>%
-    mutate(`ResultMeasure/MeasureUnitCode` = 'deg C') %>%
-    filter(ResultMeasureValue < max_value)
+    filter(ResultMeasureValue > min_value,
+           ResultMeasureValue < max_value) %>%
+    mutate(`ResultMeasure/MeasureUnitCode` = 'deg C')
     
   dat_daily <- group_by(dat_reduced, MonitoringLocationIdentifier, ActivityStartDate, sample_depth) %>%
     summarize(temperature_mean_daily = mean(ResultMeasureValue),
               activity_start_times = paste(`ActivityStartTime/Time`, collapse = ', '),
               n_day = n())
   
-  dat_daily_meta <- filter(dat_reduced, !is.na(`ResultMeasure/MeasureUnitCode`)) %>%
-    select(-ResultMeasureValue, -`ActivityStartTime/Time`) %>%
+  dat_daily_meta <- select(dat_reduced, -ResultMeasureValue, -`ActivityStartTime/Time`) %>%
     group_by(MonitoringLocationIdentifier, ActivityStartDate, sample_depth) %>%
     summarize_all(first)
   
@@ -75,12 +74,12 @@ munge_wqp_withoutdepths <- function(in_ind, min_value, max_value, max_daily_rang
  
   # now reduce to daily measures
   # first clean up obviously bad data
-  dat_reduced <- filter(dat, ResultMeasureValue > min_value) %>%
+  dat_reduced <- dat %>%
     filter(grepl('deg C|deg F', `ResultMeasure/MeasureUnitCode`, ignore.case = TRUE)) %>%
     mutate(ResultMeasureValue = ifelse(grepl('deg F', `ResultMeasure/MeasureUnitCode`, ignore.case = TRUE),
                                        f_to_c(ResultMeasureValue), ResultMeasureValue)) %>%
     mutate(`ResultMeasure/MeasureUnitCode` = 'deg C') %>%
-    filter(ResultMeasureValue < max_value)
+    filter(ResultMeasureValue > min_value, ResultMeasureValue < max_value)
   
   dat_daily <- group_by(dat_reduced, MonitoringLocationIdentifier, ActivityStartDate) %>%
     summarize(temperature_mean_daily = mean(ResultMeasureValue),
@@ -102,7 +101,7 @@ munge_nwis_uv <- function(in_ind, min_value, max_value, max_daily_range, out_ind
            temp_value < max_value) %>%
     mutate(dateTime = as.Date(dateTime)) %>%
     group_by(site_no, col_name, dateTime) %>%
-    summarize(temperature_mean_daily = round(mean(temp_value), 1), n_day = n())
+    summarize(temperature_mean_daily = round(mean(temp_value), 3), n_day = n())
   
   # save
   data_file <- scipiper::as_data_file(out_ind)
@@ -134,18 +133,16 @@ combine_all_dat <- function(wqp_ind, nwis_dv_ind, nwis_uv_ind, out_ind) {
   
   nwis_dv <- readRDS(sc_retrieve(nwis_dv_ind)) %>%
     mutate(date = as.Date(dateTime),
-           source = 'nwiw_dv') %>%
-    select(site_id = site_no, 
-           date, temp_degC = temp_value,
-           source)
+           source = 'nwiw_dv',
+           site_id = paste0('USGS-', site_no)) %>%
+    select(site_id, date, temp_degC = temp_value, source)
   
   nwis_uv <- readRDS(sc_retrieve(nwis_uv_ind)) %>%
     ungroup() %>%
     mutate(date = as.Date(dateTime),
-           source = 'nwiw_uv') %>%
-    select(site_id = site_no, 
-           date, temp_degC = temperature_mean_daily,
-           n_obs = n_day, source)
+           source = 'nwiw_uv',
+           site_id = paste0('USGS-', site_no)) %>%
+    select(site_id, date, temp_degC = temperature_mean_daily, n_obs = n_day, source)
   
   all_dat <- bind_rows(wqp, nwis_dv, nwis_uv)
     
