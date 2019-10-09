@@ -168,33 +168,35 @@ wqp_POST <- function(wqp_args_list){
   wqp_args_list$siteid <- wqp_args_list$siteid
   post_body = jsonlite::toJSON(wqp_args_list, pretty = TRUE)
   
-  temp <- tempfile()
-  temp <- paste0(temp,".zip")
-  x <- POST(paste0(wqp_url,"?mimeType=tsv&zip=yes"),
-            body = post_body,
-            content_type("application/json"),
-            accept("application/zip"),
-            httr::write_disk(temp))
+  download_location <- tempfile()
+  download_location <- paste0(temp_location,".zip")
+  pull_metadata <- POST(paste0(wqp_url,"?mimeType=tsv&zip=yes"),
+                        body = post_body,
+                        content_type("application/json"),
+                        accept("application/zip"),
+                        httr::write_disk(download_location))
   
-  headerInfo <- httr::headers(x)
-  file1 <- tempdir()
-  doc <- utils::unzip(temp, exdir=file1)
-  unlink(temp)
-  retval <- suppressWarnings(read_delim(doc, 
-                                         col_types = cols(`ActivityStartTime/Time` = col_character(),
-                                                          `ActivityEndTime/Time` = col_character(),
-                                                          USGSPCode = col_character(),
-                                                          ResultCommentText=col_character(),
-                                                          `ActivityDepthHeightMeasure/MeasureValue` = col_number(),
-                                                          `DetectionQuantitationLimitMeasure/MeasureValue` = col_number(),
-                                                          ResultMeasureValue = col_number(),
-                                                          `WellDepthMeasure/MeasureValue` = col_number(),
-                                                          `WellHoleDepthMeasure/MeasureValue` = col_number(),
-                                                          `HUCEightDigitCode` = col_character(), 
-                                                          `ActivityEndTime/TimeZoneCode` = col_character()),
-                                         quote = "", delim = "\t"))
-  unlink(doc)
-  return(retval)
+  headerInfo <- httr::headers(pull_metadata)
+  unzip_location <- tempdir()
+  unzipped_filename <- utils::unzip(download_location, exdir=unzip_location)
+  unlink(download_location)
+  dat_out <- suppressWarnings(
+    read_delim(
+      unzipped_filename, 
+      col_types = cols(`ActivityStartTime/Time` = col_character(),
+                       `ActivityEndTime/Time` = col_character(),
+                       USGSPCode = col_character(),
+                       ResultCommentText=col_character(),
+                       `ActivityDepthHeightMeasure/MeasureValue` = col_number(),
+                       `DetectionQuantitationLimitMeasure/MeasureValue` = col_number(),
+                       ResultMeasureValue = col_number(),
+                       `WellDepthMeasure/MeasureValue` = col_number(),
+                       `WellHoleDepthMeasure/MeasureValue` = col_number(),
+                       `HUCEightDigitCode` = col_character(), 
+                       `ActivityEndTime/TimeZoneCode` = col_character()),
+      quote = "", delim = "\t"))
+  unlink(unzipped_filename)
+  return(dat_out)
 }
 
 # extract and post the data (dropping the site info attribute), creating an
