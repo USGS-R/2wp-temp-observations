@@ -3,10 +3,12 @@ target_default: everything
 include:
   - 1_wqp_pull.yml
   - 2_nwis_pull.yml
+  - 5_data_munge.yml
 
 targets:
   everything:
     depends:
       - 1_wqp_pull
       - 2_nwis_pull
+      - 5_data_munge
 
