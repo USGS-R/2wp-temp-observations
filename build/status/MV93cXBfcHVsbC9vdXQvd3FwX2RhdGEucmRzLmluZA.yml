@@ -1,0 +1,14 @@
+version: 0.3.0
+name: 1_wqp_pull/out/wqp_data.rds.ind
+type: file
+hash: 0c992c14505701c64f4fde7b24166b47
+time: 2019-09-27 15:59:27 UTC
+depends:
+  wqp_pull_plan: 06fa9cd23fcab0ccbfd17bdad932f8e7
+  1_wqp_pull_tasks.yml: 8296cac3995482e0da9968ed30a57050
+  1_wqp_pull/src/wqp_pull.R: 62bf1f550e32f9936f1090fae07042ce
+fixed: b103af1551106aa1ebfea5ec48fe44e0
+code:
+  functions:
+    loop_wqp_tasks: 33f57e757da0dd017ed22a8462d6916e
+

@@ -38,16 +38,12 @@ inventory_wqp <- function(inv_ind, wqp_pull_params) {
   # only filter using characteristic names (and huc for test)
   wqp_dat <- wqp_call(whatWQPdata, wqp_args['characteristicName'])
   
-  # extract coordinates
-  coords <- data.frame(matrix(unlist(wqp_dat$out$coordinates), nrow = length(wqp_dat$out$coordinates), byrow = T))
-  
   # keep columns of interest, put back lat/long
   # keeping lat/long here in case there was a situation where you'd want to 
   # take stock/map sites before pulling data
   dat_out <- wqp_dat$out %>%
-    mutate(latitude = coords$X2, longitude = coords$X1) %>%
     select(OrganizationIdentifier, MonitoringLocationIdentifier, ResolvedMonitoringLocationTypeName, 
-           StateName, CountyName, HUCEightDigitCode, latitude, longitude, resultCount)
+           StateName, CountyName, HUCEightDigitCode, latitude = lat, longitude = lon, resultCount)
   
   # spit out nrows and time it took to get inventory
   message(sprintf('sample inventory complete, required %0.2f hours to retrieve %d rows', wqp_dat$time/(60*60), wqp_dat$nrow))
@@ -80,14 +76,23 @@ partition_wqp_inventory <- function(partitions_ind, wqp_pull_params, inventory_i
   
   # Read in the inventory & config
   wqp_inventory <- feather::read_feather(sc_retrieve(inventory_ind))
-  wqp_partition_config <- yaml::yaml.load_file(wqp_partition_cfg)
+  wqp_partition_config <- wqp_partition_cfg
   
   # filter out site types that are not of interest
   
   wqp_inventory <- wqp_inventory %>%
     filter(!(ResolvedMonitoringLocationTypeName %in% wqp_pull_params$DropLocationTypeName))
   
+  # filter out bad org names
+  # these orgs cause "Frequest failed [400]" errors
+  bad_orgs <- grep(' |\\.|/', wqp_inventory$OrganizationIdentifier, value = TRUE)
+  bad_orgs_sites <- filter(wqp_inventory, OrganizationIdentifier %in% bad_orgs)
   
+  if (nrow(bad_orgs_sites) > 0){
+    message(sprintf("**dropping %s sites and %s results due to bad MonIDs", nrow(bad_orgs_sites), sum(bad_orgs_sites$resultCount)))
+  }
+  
+  wqp_inventory <- filter(wqp_inventory, !OrganizationIdentifier %in% bad_orgs)
   
   # Define the atomic_groups to use in setting up data pull partitions. An
   # atomic group is a combination of parameters that can't be reasonably split
@@ -112,22 +117,37 @@ partition_wqp_inventory <- function(partitions_ind, wqp_pull_params, inventory_i
   # each of these sites/lakes will get its own partition + (B) the number of
   # remaining observations divided by the target partition size.
   target_pull_size <- wqp_partition_config$target_pull_size
+  target_site_size <- wqp_partition_config$target_inv_size
   n_single_site_partitions <- filter(atomic_groups, resultCount >= target_pull_size) %>% nrow()
-  n_multi_site_partitions <- filter(atomic_groups, resultCount < target_pull_size) %>%
+  n_multi_site_partitions_byresult <- filter(atomic_groups, resultCount < target_pull_size) %>%
     pull(resultCount) %>%
     { ceiling(sum(.)/target_pull_size) }
+  
+  # take into account ~1000 sites per pull
+  n_multi_site_partitions_bysite <- nrow(filter(atomic_groups, resultCount < target_pull_size))/target_site_size
+  n_multi_site_partitions <- ceiling(ifelse(n_multi_site_partitions_bysite >= n_multi_site_partitions_byresult, n_multi_site_partitions_bysite, n_multi_site_partitions_byresult))
+  
   num_partitions <- n_single_site_partitions + n_multi_site_partitions
   
   # Assign each site to a partition. Sites with huge numbers
   # of observations will each get their own partition.
   partition_sizes <- rep(0, num_partitions)
-  assignments <- rep(NA, nrow(atomic_groups)) # use a vector rather than adding a col to atomic_groups b/c it'll be way faster
-  for(i in seq_len(nrow(atomic_groups))) {
-    smallest_partition <- which.min(partition_sizes)
+  partition_site_sizes <- rep(0, num_partitions)
+  assignments <- rep(NA, nrow(atomic_groups)) 
+  partition_index <- 1:num_partitions
+  
+  # use a vector rather than adding a col to atomic_groups b/c it'll be way faster
+  for(i in 1:nrow(atomic_groups)) {
+    indexing_true <- partition_index[partition_site_sizes < target_site_size]
+    smallest_partition_nonindexed <- which.min(partition_sizes[partition_site_sizes < target_site_size])
+    smallest_partition <- indexing_true[smallest_partition_nonindexed]
+    
     assignments[i] <- smallest_partition
     size_i <- atomic_groups[[i,"resultCount"]]
     partition_sizes[smallest_partition] <- partition_sizes[smallest_partition] + size_i
+    partition_site_sizes[smallest_partition] <- partition_site_sizes[smallest_partition] + 1
   }
+  
   
   # Prepare one data_frame containing info about each site, including
   # the pull, constituent, and task name (where task name will become the core
@@ -138,7 +158,7 @@ partition_wqp_inventory <- function(partitions_ind, wqp_pull_params, inventory_i
   partitions <- atomic_groups %>%
     mutate(
       PullDate = pull_time,
-      PullTask = sprintf('%s_%03d', pull_id, assignments)) %>%
+      PullTask = sprintf('%s_%04d', pull_id, assignments)) %>%
     left_join(select(wqp_inventory, MonitoringLocationIdentifier, SiteNumObs=resultCount), by='MonitoringLocationIdentifier') %>%
     select(MonitoringLocationIdentifier, SiteNumObs, PullTask, PullDate)
   
