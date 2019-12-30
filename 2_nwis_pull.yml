@@ -41,6 +41,11 @@ targets:
       
   2_nwis_pull/inout/nwis_dv_inventory.feather:
     command: gd_get('2_nwis_pull/inout/nwis_dv_inventory.feather.ind')
+    
+  # write summary table of inventory for quick PR comparison
+  2_nwis_pull/inout/nwis_dv_inventory_summary.csv:
+    command: summarize_inventory(inv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
+      out_file = target_name)
   
   # uv data 
   2_nwis_pull/inout/nwis_uv_inventory.feather.ind:
@@ -69,6 +74,12 @@ targets:
     
   2_nwis_pull/inout/nwis_uv_inventory_reduced.feather:
     command: gd_get('2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind')
+    
+  # write summary table of inventory for quick PR comparison
+  2_nwis_pull/inout/nwis_uv_inventory_summary.csv:
+    command: summarize_inventory(inv_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind', 
+      out_file = target_name)
+  
 
   # -- partition data -- #
   # dv
