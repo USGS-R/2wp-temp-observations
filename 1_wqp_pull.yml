@@ -41,8 +41,8 @@ targets:
     
   # write a table that shows sites and records by state for each comparison
   # between PRs
-  1_wqp_pull/out/wqp_inventory_summary.csv:
-    command: summarize_inventory(inv_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind', out_file = target_name)
+  1_wqp_pull/inout/wqp_inventory_summary.csv:
+    command: summarize_wqp_inventory(inv_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind', out_file = target_name)
 
   # make a plan for how to partition the inventory into separate data pulls.
   
