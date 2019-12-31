@@ -55,6 +55,17 @@ inventory_wqp <- function(inv_ind, wqp_pull_params) {
   
 }
 
+summarize_wqp_inventory <- function(inv_ind, out_file) {
+ 
+   wqp_inventory <- feather::read_feather(sc_retrieve(inv_ind))
+   
+   all <- data.frame(n_sites = nrow(wqp_inventory), 
+                     n_records = sum(wqp_inventory$resultCount), stringsAsFactors = FALSE)
+   
+   write.csv(all, out_file, row.names = FALSE)
+      
+}
+
 #' Partition calls to WQP based on number of records available in WQP and a
 #' number of records that is a reasonable call to WQP.
 #'

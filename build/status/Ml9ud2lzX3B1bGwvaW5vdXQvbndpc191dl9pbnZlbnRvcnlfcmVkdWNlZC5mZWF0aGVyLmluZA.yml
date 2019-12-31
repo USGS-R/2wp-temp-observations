@@ -1,11 +1,11 @@
 version: 0.3.0
 name: 2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind
 type: file
-hash: e7ecb2537e9324d9f5e27eb04a15b7a1
-time: 2019-09-29 17:33:05 UTC
+hash: 896651f346c0fb8429d02de18b00faad
+time: 2019-12-31 15:20:10 UTC
 depends:
-  2_nwis_pull/inout/nwis_uv_inventory.feather.ind: e34392f510d42cc6e9999fde742933b7
-  2_nwis_pull/inout/nwis_compare_services.feather.ind: 9ee130dfab31bb1e751a2620009af442
+  2_nwis_pull/inout/nwis_uv_inventory.feather.ind: 4ad84f00b7a3bfcbf9d92eec448bb038
+  2_nwis_pull/inout/nwis_compare_services.feather.ind: b852d303a94b85ae349246ebe65a2ff2
 fixed: 87462faeb4ae7586edd11b9687c2273a
 code:
   functions:
