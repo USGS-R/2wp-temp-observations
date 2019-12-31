@@ -44,7 +44,7 @@ targets:
     
   # write summary table of inventory for quick PR comparison
   2_nwis_pull/inout/nwis_dv_inventory_summary.csv:
-    command: summarize_inventory(inv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
+    command: summarize_nwis_inventory(inv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
       out_file = target_name)
   
   # uv data 
