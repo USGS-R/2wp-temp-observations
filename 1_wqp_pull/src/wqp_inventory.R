@@ -180,3 +180,14 @@ partition_wqp_inventory <- function(partitions_ind, wqp_pull_params, inventory_i
   gd_put(partitions_ind) # 1-arg version requires scipiper 0.0.11+
 }
 
+
+summarize_wqp_data <- function(data_ind, out_file) {
+  
+  wqp_dat <- readRDS(sc_retrieve(data_ind))
+  
+  wqp_summary <- data.frame(n_obs = nrow(wqp_dat),
+                            n_sites = length(unique(wqp_dat$MonitoringLocationIdentifier)))
+  
+  write.csv(wqp_summary, out_file, row.names = FALSE)
+  
+}

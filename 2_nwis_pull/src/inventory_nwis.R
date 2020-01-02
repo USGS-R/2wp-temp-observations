@@ -35,3 +35,13 @@ summarize_nwis_inventory <- function(inv_ind, out_file) {
   write.csv(all, out_file, row.names = FALSE)
   
 }
+
+summarize_nwis_data <- function(data_ind, out_file) {
+  nwis_data <- readRDS(sc_retrieve(data_ind))
+  
+  summary <- data.frame(n_obs = nrow(nwis_data),
+                        n_sites = length(unique(nwis_data$site_no)))
+  
+  write.csv(summary, out_file, row.names = FALSE)
+  
+}
