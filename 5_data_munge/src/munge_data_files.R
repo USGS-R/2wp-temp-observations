@@ -153,3 +153,21 @@ combine_all_dat <- function(wqp_ind, nwis_dv_ind, nwis_uv_ind, out_ind) {
   
 }
   
+combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_ind, out_ind){
+
+  nwis_sites <- feather::read_feather(sc_retrieve(nwis_dv_sites_ind)) %>%
+    mutate(source = 'nwis_dv') %>%
+    bind_rows(feather::read_feather(sc_retrieve(nwis_uv_sites_ind)) %>% 
+                mutate(source = 'nwis_uv')) %>%
+    select(site_no, station_nm, site_type = site_tp_cd, latitude = dec_lat_va, longitude = dec_long_va, source)
+  
+  wqp_sites <- feather::read_feather(sc_retrieve(wqp_sites_ind)) %>%
+    mutate(source = 'wqp') %>%
+    select(site_no = MonitoringLocationIdentifier, latitude, longitude, 
+           site_type = ResolvedMonitoringLocationTypeName, source)
+  
+  all_sites <- bind_rows(nwis_sites, wqp_sites)
+  
+  saveRDS(all_sites, as_data_file(out_ind))
+  gd_put(out_ind, as_data_file(out_ind))
+}
