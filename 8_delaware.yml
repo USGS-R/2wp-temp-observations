@@ -1,0 +1,57 @@
+target_default: 8_delaware
+
+packages:
+  - sf
+  - tidyverse
+  - lwgeom
+  - smoothr
+  - igraph
+  - purrr
+  - geojsonio
+  - geojsonsf
+
+sources:
+  - 8_delaware/src/geo_fabric_functions.R
+  - 8_delaware/src/crosswalk_functions.R
+
+targets:
+  8_delaware:
+    depends:
+     - 8_delaware/out/basin_data.rds
+
+  8_delaware/out/network.rds:
+    command: revise_raw_network(
+      out_ind = target_name, 
+      subset_network = I('8_delaware/in/delaware_stream_temp_by_segment/delaware_segments/delaware_segments.shp'),
+      national_network = I('8_delaware/in/GeospatialFabric_National.gdb'))
+      
+  8_delaware/out/boundary/boundary.shp:
+    command: create_boundary(
+      out_ind = target_name, 
+      subset_network = I('8_delaware/in/delaware_stream_temp_by_segment/delaware_segments/delaware_segments.shp'),
+      national_network = I('8_delaware/in/GeospatialFabric_National.gdb'))
+      
+  8_delaware/out/crosswalk_site_reach.rds:
+    command: crosswalk_sites_to_reaches(
+      sites_ind = '5_data_munge/out/all_sites.rds.ind',
+      boundary_ind = '8_delaware/out/boundary/boundary.shp',
+      network_ind = '8_delaware/out/network.rds')
+    depends: 
+      - src/subset_closest.R
+      
+  8_delaware/out/basin_data.rds:
+    command: subset_data(
+      out_ind = target_name, 
+      crosswalk_ind = '8_delaware/out/crosswalk_site_reach.rds', 
+      dat_ind = '5_data_munge/out/daily_temperatures.rds.ind')
+      
+  # generate file for Makerspace to load for map (http://delaware-basin-test-website.s3-website-us-west-2.amazonaws.com/)
+  
+  out/delaware_sites_summary.rds:
+    command: generate_site_summary()
+    
+  out/delaware_sites_summary.geojson:
+    command: generate_site_geojson()
+  
+  # generate data products for collaborators
+  

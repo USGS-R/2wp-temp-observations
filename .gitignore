@@ -22,3 +22,7 @@
 
 # old folder that stores junk
 old/*
+
+# ignore geodb for national network
+# and delaware shape file
+8_delaware/in/*
