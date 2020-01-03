@@ -138,9 +138,12 @@ targets:
     command: create_nwis_pull_makefile(makefile=target_name, task_plan=nwis_uv_pull_plan,
       final_targets = I('2_nwis_pull/out/nwis_uv_data.rds.ind'))
 
+  temp_tasks:
+    command: create_task_subset(nwis_uv_pull_plan)
+    
   2_nwis_pull/out/nwis_uv_data.rds.ind:
     command: loop_tasks(task_plan=nwis_uv_pull_plan, task_makefile='2_nwis_uv_pull_tasks.yml',
-      num_tries=I(30), sleep_on_error=I(20))
+      num_tries=I(30), sleep_on_error=I(20),  task_names = temp_tasks)
     depends:
       - 2_nwis_pull/src/nwis_pull.R
       

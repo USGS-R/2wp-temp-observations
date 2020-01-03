@@ -168,3 +168,7 @@ choose_temp_column <- function(temp_dat) {
   return(reduced_dat)
 }
 
+create_task_subset <- function(nwis_uv_pull_plan) {
+  tasks <- names(nwis_uv_pull_plan)[2:length(names(nwis_uv_pull_plan))]
+  return(tasks)
+}
