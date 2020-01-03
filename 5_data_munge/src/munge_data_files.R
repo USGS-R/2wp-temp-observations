@@ -159,11 +159,12 @@ combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_in
     mutate(source = 'nwis_dv') %>%
     bind_rows(feather::read_feather(sc_retrieve(nwis_uv_sites_ind)) %>% 
                 mutate(source = 'nwis_uv')) %>%
-    select(site_no, station_nm, site_type = site_tp_cd, latitude = dec_lat_va, longitude = dec_long_va, source)
+    mutate(site_id = paste0('USGS-', site_no)) %>%
+    select(site_id, site_type = site_tp_cd, latitude = dec_lat_va, longitude = dec_long_va, source)
   
   wqp_sites <- feather::read_feather(sc_retrieve(wqp_sites_ind)) %>%
     mutate(source = 'wqp') %>%
-    select(site_no = MonitoringLocationIdentifier, latitude, longitude, 
+    select(site_id = MonitoringLocationIdentifier, latitude, longitude, 
            site_type = ResolvedMonitoringLocationTypeName, source)
   
   all_sites <- bind_rows(nwis_sites, wqp_sites)
