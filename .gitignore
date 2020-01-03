@@ -19,3 +19,6 @@
 
 # temporary folders
 1_wqp_pull/tmp/*
+
+# old folder that stores junk
+old/*
