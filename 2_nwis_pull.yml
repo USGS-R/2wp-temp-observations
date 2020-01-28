@@ -15,6 +15,7 @@ sources:
   - 2_nwis_pull/src/nwis_pull.R
   - 2_nwis_pull/src/compare_nwis_services.R
   - 2_nwis_pull/src/nwis_partition.R
+  - 2_nwis_pull/src/nwis_misc.R
 
 targets:
   2_nwis_pull:
@@ -24,6 +25,7 @@ targets:
       
 # -- get a CONUS inventory of available data for download -- #
 
+  # !! for a new pull, modify end date in '2_nwis_pull/cfg/nwis_pull_params.yml'
   nwis_pull_parameters:
     command: yaml.load_file('2_nwis_pull/cfg/nwis_pull_params.yml')
     
@@ -143,7 +145,7 @@ targets:
     
   2_nwis_pull/out/nwis_uv_data.rds.ind:
     command: loop_tasks(task_plan=nwis_uv_pull_plan, task_makefile='2_nwis_uv_pull_tasks.yml',
-      num_tries=I(30), sleep_on_error=I(20),  task_names = temp_tasks)
+      num_tries=I(30), sleep_on_error=I(20))
     depends:
       - 2_nwis_pull/src/nwis_pull.R
       
