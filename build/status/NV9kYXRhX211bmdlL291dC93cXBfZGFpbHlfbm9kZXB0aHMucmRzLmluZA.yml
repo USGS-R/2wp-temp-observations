@@ -1,10 +1,10 @@
 version: 0.3.0
 name: 5_data_munge/out/wqp_daily_nodepths.rds.ind
 type: file
-hash: e2d8227f1c21ad3dde6c2a6d10c13a55
-time: 2019-09-28 03:40:54 UTC
+hash: 608b4f580595aeb022116fc77605b5a6
+time: 2020-01-08 19:28:37 UTC
 depends:
-  1_wqp_pull/out/wqp_data.rds.ind: 0c992c14505701c64f4fde7b24166b47
+  1_wqp_pull/out/wqp_data.rds.ind: 9e3d5545f7dc7e28e3cbb093b1e2dd0d
   min_value: c96c32be843430ad3b4632edb49aee30
   max_value: 8550904a2a45c13015a45b21ef719fb7
   max_daily_range: afe39393dd5be2c095cd37fede5c5b89
@@ -12,5 +12,5 @@ fixed: c8da49989b1a3d05cbbfd15be13cfef9
 code:
   functions:
     f_to_c: a61909ceabd1801b610840dc86315ffe
-    munge_wqp_withoutdepths: 9998f1e94f9b6021f77d3835241923fd
+    munge_wqp_withoutdepths: bcab8bf1a177d0af9accf783a3a6877a
 
