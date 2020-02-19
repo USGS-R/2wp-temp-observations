@@ -201,13 +201,13 @@ plot_sites_ndates <- function(sites_shp_ind, out_ind) {
   library(rnaturalearth)
   USA <- ne_countries() %>%
     sf::st_as_sf() %>%
-    filter(geounit == "United States of America") # to include PR, use sovereignt instead of geounit
+    filter(sovereignt == "United States of America") # to exclude PR, use geounit instead of sovereignt
   
   sites_usa <- sites_sf %>%
     filter(!is.na(n_dates), !is.na(n_obs)) %>%
-    sample_n(1000) %>%
+    sample_n(10000) %>%
     sf::st_intersection(USA) # takes a few minutes!
-  
+
   g <- sites_usa %>%
     ggplot() +
     geom_sf(data=USA, fill=NA) +
