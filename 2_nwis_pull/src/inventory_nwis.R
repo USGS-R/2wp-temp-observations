@@ -21,3 +21,27 @@ inventory_nwis <- function(inv_ind, nwis_pull_params, service) {
   gd_put(inv_ind)
   
 }
+
+summarize_nwis_inventory <- function(inv_ind, out_file) {
+  
+  nwis_inventory <- feather::read_feather(sc_retrieve(inv_ind))
+  
+  all <- data.frame(n_sites = nrow(nwis_inventory), 
+                    n_records = sum(nwis_inventory$count_nu), 
+                    earliest = min(nwis_inventory$begin_date),
+                    latest = max(nwis_inventory$end_date), stringsAsFactors = FALSE)
+  
+  
+  write.csv(all, out_file, row.names = FALSE)
+  
+}
+
+summarize_nwis_data <- function(data_ind, out_file) {
+  nwis_data <- readRDS(sc_retrieve(data_ind))
+  
+  summary <- data.frame(n_obs = nrow(nwis_data),
+                        n_sites = length(unique(nwis_data$site_no)))
+  
+  write.csv(summary, out_file, row.names = FALSE)
+  
+}

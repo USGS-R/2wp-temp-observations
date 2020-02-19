@@ -10,8 +10,8 @@ sources:
 targets:
   5_data_munge:
     depends:
-      - 5_data_munge/out/wqp_daily_depths.rds.ind
-      - 5_data_munge/out/wqp_daily_nodepths.rds.ind
+      - 5_data_munge/out/daily_temperatures.rds.ind
+      - 5_data_munge/out/all_sites.rds.ind
     
 # -- For WQP and NWISuv, first do a coarse QA, then reduce to daily  -- #
 # -- For NWISdv, do the coarse QA  -- #
@@ -74,3 +74,13 @@ targets:
       
   5_data_munge/out/daily_temperatures.rds:
     command: gd_get('5_data_munge/out/daily_temperatures.rds.ind')
+    
+  5_data_munge/out/all_sites.rds.ind:
+    command: combine_all_sites(
+      out_ind = target_name,
+      nwis_dv_sites_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind',
+      nwis_uv_sites_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind',
+      wqp_sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind')
+      
+  5_data_munge/out/all_sites.rds:
+    command: gd_get('5_data_munge/out/all_sites.rds.ind')

@@ -167,4 +167,3 @@ choose_temp_column <- function(temp_dat) {
   
   return(reduced_dat)
 }
-

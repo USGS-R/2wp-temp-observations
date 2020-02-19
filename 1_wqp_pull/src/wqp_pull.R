@@ -168,8 +168,7 @@ wqp_POST <- function(wqp_args_list){
   wqp_args_list$siteid <- wqp_args_list$siteid
   post_body = jsonlite::toJSON(wqp_args_list, pretty = TRUE)
   
-  download_location <- tempfile()
-  download_location <- paste0(temp_location,".zip")
+  download_location <- tempfile(pattern = ".zip")
   pull_metadata <- POST(paste0(wqp_url,"?mimeType=tsv&zip=yes"),
                         body = post_body,
                         content_type("application/json"),

@@ -30,7 +30,6 @@ targets:
   # -- get inventory of observations available to download -- #
 
   # get inventory of samples available on WQP
-  # currently subsetted to a single huc for testing
   # only filters by characteristicNames, and pulls all at the same time
   1_wqp_pull/inout/wqp_inventory.feather.ind:
     command: inventory_wqp(
@@ -39,6 +38,11 @@ targets:
       
   1_wqp_pull/inout/wqp_inventory.feather:
     command: gd_get('1_wqp_pull/inout/wqp_inventory.feather.ind')
+    
+  # write a table that shows sites and records by state for each comparison
+  # between PRs
+  1_wqp_pull/inout/wqp_inventory_summary.csv:
+    command: summarize_wqp_inventory(inv_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind', out_file = target_name)
 
   # make a plan for how to partition the inventory into separate data pulls.
   
@@ -76,3 +80,8 @@ targets:
       
   1_wqp_pull/out/wqp_data.rds:
     command: gd_get('1_wqp_pull/out/wqp_data.rds.ind')
+    
+  1_wqp_pull/out/wqp_data_summary.csv:
+    command: summarize_wqp_data(
+      data_ind = '1_wqp_pull/out/wqp_data.rds.ind',
+      out_file = target_name)

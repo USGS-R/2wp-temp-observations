@@ -1,8 +1,8 @@
 version: 0.3.0
 name: 1_wqp_pull/inout/wqp_inventory.feather.ind
 type: file
-hash: 756985b1caa92e538e06dc55de5b67ec
-time: 2019-08-27 21:25:15 UTC
+hash: 2d5819a1baaa089f245b7738718a8d12
+time: 2019-12-31 15:31:54 UTC
 depends:
   wqp_pull_parameters: 61e80f749c74948bf95bb67cb07412b0
 fixed: 771195029a2667a2a7b9465306769095

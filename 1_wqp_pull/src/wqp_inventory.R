@@ -55,6 +55,17 @@ inventory_wqp <- function(inv_ind, wqp_pull_params) {
   
 }
 
+summarize_wqp_inventory <- function(inv_ind, out_file) {
+ 
+   wqp_inventory <- feather::read_feather(sc_retrieve(inv_ind))
+   
+   all <- data.frame(n_sites = nrow(wqp_inventory), 
+                     n_records = sum(wqp_inventory$resultCount), stringsAsFactors = FALSE)
+   
+   write.csv(all, out_file, row.names = FALSE)
+      
+}
+
 #' Partition calls to WQP based on number of records available in WQP and a
 #' number of records that is a reasonable call to WQP.
 #'
@@ -169,3 +180,14 @@ partition_wqp_inventory <- function(partitions_ind, wqp_pull_params, inventory_i
   gd_put(partitions_ind) # 1-arg version requires scipiper 0.0.11+
 }
 
+
+summarize_wqp_data <- function(data_ind, out_file) {
+  
+  wqp_dat <- readRDS(sc_retrieve(data_ind))
+  
+  wqp_summary <- data.frame(n_obs = nrow(wqp_dat),
+                            n_sites = length(unique(wqp_dat$MonitoringLocationIdentifier)))
+  
+  write.csv(wqp_summary, out_file, row.names = FALSE)
+  
+}
