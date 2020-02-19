@@ -172,3 +172,49 @@ combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_in
   saveRDS(all_sites, as_data_file(out_ind))
   gd_put(out_ind, as_data_file(out_ind))
 }
+
+make_sites_shp <- function(all_sites_ind, all_temps_ind, out_ind) {
+  sites <- readRDS(gd_get(all_sites_ind)) # replace gd_get with sc_retrieve when pipeline is shored up
+  temps <- readRDS(gd_get(all_temps_ind)) # replace gd_get with sc_retrieve when pipeline is shored up
+  
+  temp_summary <- temps %>%
+    filter(!is.na(date), !is.na(n_obs)) %>%
+    group_by(site_id) %>%
+    summarize(n_dates = length(unique(date)),
+              n_obs = sum(n_obs, na.rm=TRUE), # why are some n_obs=NA?
+              sources=paste(sort(unique(source)), collapse=','))
+  
+  sites_sf <- sites %>%
+    left_join(temp_summary, by='site_id') %>%
+    filter(!is.na(latitude), !is.na(longitude)) %>%
+    sf::st_as_sf(coords=c('longitude','latitude'), crs=sf::st_crs('+proj=longlat +datum=WGS84'))
+  
+  if(!dir.exists(dirname(out_ind))) dir.create(dirname(out_ind))
+  sf::st_write(sites_sf, scipiper::as_data_file(out_ind), layer='sites', delete_layer=TRUE)
+  scipiper::sc_indicate(out_ind, data_file=scipiper::as_data_file(out_ind))
+  ## TO DO: gd_put instead of just indicate
+}
+
+plot_sites_ndates <- function(sites_shp_ind, out_ind) {
+  sites_sf <- sf::st_read(scipiper::as_data_file(sites_shp_ind)) # replace as_data_file with sc_retrieve when practical
+  
+  library(rnaturalearth)
+  USA <- ne_countries() %>%
+    sf::st_as_sf() %>%
+    filter(geounit == "United States of America") # to include PR, use sovereignt instead of geounit
+  
+  sites_usa <- sites_sf %>%
+    filter(!is.na(n_dates), !is.na(n_obs)) %>%
+    sample_n(1000) %>%
+    sf::st_intersection(USA) # takes a few minutes!
+  
+  g <- sites_usa %>%
+    ggplot() +
+    geom_sf(data=USA, fill=NA) +
+    geom_sf(aes(color=n_dates), size=0.2) +
+    scale_color_gradient(trans='log10', low = "#56B1F7", high = "#132B43") +
+    theme_bw()
+  
+  ggsave(scipiper::as_data_file(out_ind), plot=g, width=10, height=8)
+  ## TO DO: gd_put instead of just indicate
+}

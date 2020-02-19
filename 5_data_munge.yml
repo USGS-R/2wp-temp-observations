@@ -3,6 +3,10 @@ target_default: 5_data_munge
 packages:
   - scipiper
   - dplyr
+  - sf
+  - ggplot2
+  - rnaturalearth
+  - rnaturalearthhires
   
 sources:
   - 5_data_munge/src/munge_data_files.R
@@ -84,3 +88,17 @@ targets:
       
   5_data_munge/out/all_sites.rds:
     command: gd_get('5_data_munge/out/all_sites.rds.ind')
+    
+  5_data_munge/out/sites_shp/sites.shp.ind:
+    command: make_sites_shp(
+      out_ind = target_name,
+      all_sites_ind = '5_data_munge/out/all_sites.rds.ind',
+      all_temps_ind = '5_data_munge/out/daily_temperatures.rds.ind')
+  
+  5_data_munge/out/sites_shp/sites.shp:
+    command: gd_get('5_data_munge/out/sites_shp/sites.shp')
+      
+  5_data_munge/out/sites_ndates.png.ind:
+    command: plot_sites_ndates(
+      out_ind = target_name,
+      sites_shp_ind = '5_data_munge/out/sites_shp/sites.shp.ind')
