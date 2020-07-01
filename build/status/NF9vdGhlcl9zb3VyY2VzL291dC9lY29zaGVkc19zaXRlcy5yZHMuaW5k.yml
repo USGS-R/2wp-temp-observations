@@ -1,0 +1,12 @@
+version: 0.3.0
+name: 4_other_sources/out/ecosheds_sites.rds.ind
+type: file
+hash: 9149dbe0254370336bad4e258c1499e7
+time: 2020-07-01 16:18:04 UTC
+depends:
+  4_other_sources/in/sheds-public-data-20200622.zip.ind: a1f86620f0fb41779e2c61935d4277d8
+fixed: cdb8bfaf030847bfdfc982f6c5376c43
+code:
+  functions:
+    unzip_extract_sites: 7279e6fe1c4ecb91abf412fdc51203e9
+

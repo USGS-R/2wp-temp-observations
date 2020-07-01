@@ -123,7 +123,36 @@ munge_nwis_dv <- function(in_ind, min_value, max_value, max_daily_range, out_ind
   
 }
 
-combine_all_dat <- function(wqp_ind, nwis_dv_ind, nwis_uv_ind, out_ind) {
+munge_ecosheds <- function(in_ind, out_ind) {
+  dat <- readRDS(sc_retrieve(in_ind, remake_file = 'getters.yml'))
+  
+  # some data appears to be in fahrenheit (values > 45)
+  # find those series and convert to celsius
+  
+  over_45 <- filter(dat, mean >= 45)
+  high_series<- filter(dat, series_id %in% unique(over_45$series_id)) %>%
+    mutate(mean = f_to_c(mean))
+  
+  # bind with "good" data
+  # remove data above 35, below 0
+  dat_out <- filter(dat, !series_id %in% unique(over_45$series_id)) %>%
+    bind_rows(high_series) %>%
+    filter(mean > min_value,
+           mean < max_value)
+
+  message(nrow(dat) - nrow(dat_out), ' temperature observations dropped because they were outside of 0-35 deg C.')
+  
+  dat_out2 <- dat_out %>%
+    filter(!grepl('delete data|inaccurate|setup|bad value|preplacement|dewatered|out of water|out ofwater|outofwater|removal|set up|too warm', comment, ignore.case = TRUE))
+  
+  message(nrow(dat_out) - nrow(dat_out2), ' temperature observations dropped due to comments that indicated poor data quality.')
+  
+  saveRDS(dat_out2, file = as_data_file(out_ind))  
+  gd_put(out_ind)
+  
+}
+
+combine_all_dat <- function(wqp_ind, nwis_dv_ind, nwis_uv_ind, ecosheds_ind, out_ind) {
   wqp <- readRDS(sc_retrieve(wqp_ind)) %>%
     mutate(date = as.Date(ActivityStartDate), source = 'wqp') %>%
     select(site_id = MonitoringLocationIdentifier, 
@@ -144,16 +173,20 @@ combine_all_dat <- function(wqp_ind, nwis_dv_ind, nwis_uv_ind, out_ind) {
            site_id = paste0('USGS-', site_no)) %>%
     select(site_id, date, temp_degC = temperature_mean_daily, n_obs = n_day, source)
   
-  all_dat <- bind_rows(wqp, nwis_dv, nwis_uv)
+  ecosheds <- readRDS(sc_retrieve(ecosheds_ind, remake_file = 'getters.yml')) %>%
+    mutate(source = 'ecosheds') %>%
+    select(site_id = location_id, temp_degC = mean, n_obs = n, source)
+  
+  all_dat <- bind_rows(wqp, nwis_dv, nwis_uv, ecosheds)
     
   # save
   data_file <- scipiper::as_data_file(out_ind)
   saveRDS(all_dat, data_file)
-  gd_put(out_ind, data_file)
+  gd_put(out_ind)
   
 }
   
-combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_ind, out_ind){
+combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_ind, ecosheds_sites_ind, out_ind){
 
   nwis_sites <- feather::read_feather(sc_retrieve(nwis_dv_sites_ind)) %>%
     mutate(source = 'nwis_dv') %>%
@@ -167,8 +200,12 @@ combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_in
     select(site_id = MonitoringLocationIdentifier, latitude, longitude, 
            site_type = ResolvedMonitoringLocationTypeName, source)
   
-  all_sites <- bind_rows(nwis_sites, wqp_sites)
+  ecosheds_sites <- readRDS(sc_retrieve(ecosheds_sites_ind, remake_file = 'getters.yml')) %>%
+    mutate(source = 'ecosheds', site_type = 'stream') %>%
+    select(site_id = 'location_id', latitude, longitude, site_type, source)
+    
+  all_sites <- bind_rows(nwis_sites, wqp_sites, ecosheds_sites)
   
   saveRDS(all_sites, as_data_file(out_ind))
-  gd_put(out_ind, as_data_file(out_ind))
+  gd_put(out_ind)
 }

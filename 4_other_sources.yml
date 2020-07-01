@@ -1,0 +1,27 @@
+target_default: 4_other_sources
+
+packages:
+  - dplyr
+  - readr
+
+sources:
+  - 4_other_sources/src/get_ecosheds_data.R
+
+targets:
+  4_other_sources:
+    depends:
+      #- 4_other_sources/out/ecosheds_data.rds.ind
+    
+  # Eco-SHEDS data  
+  # unzip values and metadata, merge, and write EcoSHEDS data
+  # files sent by Jeff Walker on 6/22 - includes all public-facing EcoSHEDS daily data
+
+  4_other_sources/out/ecosheds_data.rds.ind:  
+    command: unzip_merge_values(
+      zip_ind = '4_other_sources/in/sheds-public-data-20200622.zip.ind',
+      out_ind = target_name)
+      
+  4_other_sources/out/ecosheds_sites.rds.ind:
+    command: unzip_extract_sites(
+      zip_ind = '4_other_sources/in/sheds-public-data-20200622.zip.ind',
+      out_ind = target_name)
