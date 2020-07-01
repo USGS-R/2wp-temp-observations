@@ -25,3 +25,7 @@ targets:
     command: unzip_extract_sites(
       zip_ind = '4_other_sources/in/sheds-public-data-20200622.zip.ind',
       out_ind = target_name)
+      
+  4_other_sources/out/ecosheds_summary.csv:
+    command: summarize_ecosheds_data(
+      data_ind = '4_other_sources/out/ecosheds_data.rds.ind', out_file = target_name)

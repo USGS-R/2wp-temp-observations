@@ -38,3 +38,13 @@ unzip_extract_sites <- function(zip_ind, out_ind) {
   unlink(extract_dir, recursive = TRUE)
   gd_put(out_ind)
 }
+
+summarize_ecosheds_data <- function(data_ind, out_file) {
+  ecosheds_data <- readRDS(sc_retrieve(data_ind, remake_file = 'getters.yml'))
+  
+  summary <- data.frame(n_obs = nrow(ecosheds_data),
+                        n_sites = length(unique(ecosheds_data$location_id)))
+  
+  readr::write_csv(summary, out_file)
+  
+}
