@@ -62,7 +62,7 @@ summarize_wqp_inventory <- function(inv_ind, out_file) {
    all <- data.frame(n_sites = nrow(wqp_inventory), 
                      n_records = sum(wqp_inventory$resultCount), stringsAsFactors = FALSE)
    
-   write.csv(all, out_file, row.names = FALSE)
+   readr::write_csv(all, out_file)
       
 }
 
@@ -188,6 +188,6 @@ summarize_wqp_data <- function(data_ind, out_file) {
   wqp_summary <- data.frame(n_obs = nrow(wqp_dat),
                             n_sites = length(unique(wqp_dat$MonitoringLocationIdentifier)))
   
-  write.csv(wqp_summary, out_file, row.names = FALSE)
+  readr::write_csv(wqp_summary, out_file)
   
 }
