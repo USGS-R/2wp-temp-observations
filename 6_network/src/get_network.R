@@ -37,7 +37,7 @@ compute_endpoints <- function(national_network, out_ind) {
   #sf::st_layers('data/GeospatialFabric_National.gdb') # POIs, one, nhdflowline_en, nhdflowline, regionOutletDA, nhruNationalIdentifier, nsegmentNationalIdentifier
   gf_reaches <- sf::read_sf(national_network, layer='nsegment_v1_1') %>%
     mutate_at(c("tosegment_v1_1"), .funs = na_if, 0) %>% # tosegment is the downstream segment to which water flows next. replace 0 (none next) with NA
-    st_zm(drop = TRUE, what = "ZM") %>% 
+    st_zm(drop = TRUE, what = "ZM") %>% #M dimension is inconsistent; prevents some subsetting
     rename(seg_id = nsegment_v1_1, to_seg = tosegment_v1_1,
            shape_length = Shape_Length)
   
@@ -49,7 +49,7 @@ compute_endpoints <- function(national_network, out_ind) {
   # find points in gf_points, but at least one doesn't exist (the outlet to 155)
   # and I realized what I wanted most was the end points anyway.
   #should take about 9 minutes for national, single-threaded
-  
+  #setup_strategy is due to Rstudio bug
   #https://github.com/rstudio/rstudio/issues/6692
   cl <- makeCluster(detectCores() - 1, setup_strategy = "sequential")
   gf_reaches_indices <- clusterSplit(cl, 1:nrow(gf_reaches))
@@ -61,18 +61,7 @@ compute_endpoints <- function(national_network, out_ind) {
     mutate(end_points = sf::st_cast(Shape, "POINT") %>% {list(c(head(.,1),tail(.,1)))})
   }
   gf_applied <- parLapply(cl, X = gf_reaches_split, fun = add_endpoints)
-  
-  
-  gf_reaches_endpoints <- gf_reaches %>% 
-    mutate(
-      end_points = lapply(seg_id, function(segid) {
-        reach <- filter(gf_reaches, seg_id==segid)
-        end_points <- reach[1,] %>% {sf::st_cast(sf::st_geometry(.), "POINT")} %>% {c(head(.,1),tail(.,1))}
-        return(end_points)
-      }))
-  gf_reaches_endpoints <- gf_reaches %>% rowwise() %>%
-    mutate(end_points = sf::st_cast(Shape, "POINT") %>% {list(c(head(.,1),tail(.,1)))})
-  
+  gf_reaches_endpoints <- do.call(bind_rows, gf_applied)
   saveRDS(gf_reaches_endpoints, file = as_data_file(out_ind))
   gd_put(out_ind)
 }
