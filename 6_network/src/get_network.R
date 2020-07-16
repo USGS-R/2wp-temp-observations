@@ -37,39 +37,46 @@ compute_endpoints <- function(national_network, out_ind) {
   #sf::st_layers('data/GeospatialFabric_National.gdb') # POIs, one, nhdflowline_en, nhdflowline, regionOutletDA, nhruNationalIdentifier, nsegmentNationalIdentifier
   gf_reaches <- sf::read_sf(national_network, layer='nsegment_v1_1') %>%
     mutate_at(c("tosegment_v1_1"), .funs = na_if, 0) %>% # tosegment is the downstream segment to which water flows next. replace 0 (none next) with NA
-    select(seg_id = nsegment_v1_1, to_seg = tosegment_v1_1,
+    rename(seg_id = nsegment_v1_1, to_seg = tosegment_v1_1,
            shape_length = Shape_Length)
-  
-  nat_region_id_crosswalk <- gf_reaches %>% 
-    select(to_seg_id_nat = seg_id_nat, seg_id, region) %>% 
-    as_tibble() %>% 
-    rename(to_seg_shape = Shape)
-  region_outlet_reaches <- gf_reaches %>% filter(region_outlet == 1) %>% 
-    left_join(nat_region_id_crosswalk, 
-              by = c(to_region_to_segment = "seg_id", to_region = "region"))
-  intra_region_reaches <- gf_reaches %>% filter(region_outlet == 0) %>% 
-    left_join(nat_region_id_crosswalk, by = c(to_seg = "seg_id", "region"))
-  
   
   # inspect. lessons:
   # Modify reaches according to lessons learned
-  #TODO: other edge cases?
-  #seg_id_nat 26601 is both a region outlet and has an in-region downstream segment
-  gf_reaches[gf_reaches$seg_id == 357 & region == '02', 'to_seg'] <- NA # there's a huge gap between the two reaches
-  
+  #TODO: other edge cases? is this still relevant w/GFv1.1?
+
   # Augment gf_reaches with all end points of all reaches. I initially tried to
   # find points in gf_points, but at least one doesn't exist (the outlet to 155)
   # and I realized what I wanted most was the end points anyway.
   #should take about 9 minutes for national, single-threaded
-  #to parallelize: send *full* gf_reaches to each worker, along with indices to work on
-  #worker does processing, then filters down to processed indices, returns this
-  # then reassemble
-  reaches_bounded <- gf_reaches %>% mutate(
-    end_points = lapply(seg_id, function(segid) {
-      reach <- filter(gf_reaches, seg_id==segid)
-      end_points <- reach[1,] %>% {st_cast(sf::st_geometry(.), "POINT")} %>% {c(head(.,1),tail(.,1))}
-      return(end_points)
-    }))
+  #timeout is a hack to deal with Rstudio issue with cluster creation
+  #https://github.com/rstudio/rstudio/issues/6692
+  # cl <- makeCluster(detectCores() - 1, setup_timeout = 0.5) 
+  # gf_reaches_split <- clusterSplit(cl, gf_reaches)
+  # augment_with_endpoints <- function(df) {
+  #   library(dplyr)
+  #   library(sf)
+  #   cat(class(df), file = "out.txt", append = TRUE)
+  #   df_endpoints <- df %>% mutate(
+  #   end_points = lapply(seg_id, function(segid) {
+  #     reach <- filter(df, seg_id==segid)
+  #     print(reach)
+  #     end_points <- reach[1,] %>% {sf::st_cast(sf::st_geometry(.), "POINT")} %>% {c(head(.,1),tail(.,1))}
+  #     print(end_points)
+  #     return(end_points)
+  #   }))
+  #   cat(names(df_endpoints), file = "out.txt", append = TRUE)
+  #   return(df_endpoints)
+  # }
+  # gf_applied <- parLapply(cl, X = gf_reaches_split, fun = augment_with_endpoints)
+  gf_reaches_endpoints <- gf_reaches %>% 
+    mutate(
+      end_points = lapply(seg_id, function(segid) {
+        reach <- filter(gf_reaches, seg_id==segid)
+        print(reach)
+        end_points <- reach[1,] %>% {sf::st_cast(sf::st_geometry(.), "POINT")} %>% {c(head(.,1),tail(.,1))}
+        print(end_points)
+        return(end_points)
+      }))
   saveRDS(reaches_bounded, file = as_data_file(out_ind))
   gd_put(out_ind)
   return(reaches_bounded)
