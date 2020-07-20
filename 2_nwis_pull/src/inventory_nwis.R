@@ -32,7 +32,7 @@ summarize_nwis_inventory <- function(inv_ind, out_file) {
                     latest = max(nwis_inventory$end_date), stringsAsFactors = FALSE)
   
   
-  write.csv(all, out_file, row.names = FALSE)
+  readr::write_csv(all, out_file)
   
 }
 
@@ -42,6 +42,6 @@ summarize_nwis_data <- function(data_ind, out_file) {
   summary <- data.frame(n_obs = nrow(nwis_data),
                         n_sites = length(unique(nwis_data$site_no)))
   
-  write.csv(summary, out_file, row.names = FALSE)
+  readr::write_csv(summary, out_file)
   
 }
