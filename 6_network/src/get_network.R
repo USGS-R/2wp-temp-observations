@@ -33,9 +33,8 @@ get_national_gf <- function(sb_id, sb_name, out_ind) {
   sc_indicate(out_ind, data_file=dir(out_dir, full.names=TRUE))
 }
 
-compute_endpoints <- function(national_network, out_ind) {
+find_endpoints <- function(national_network, out_ind) {
   
-  #sf::st_layers('data/GeospatialFabric_National.gdb') # POIs, one, nhdflowline_en, nhdflowline, regionOutletDA, nhruNationalIdentifier, nsegmentNationalIdentifier
   gf_reaches <- sf::read_sf(national_network, layer='nsegment_v1_1') %>%
     mutate_at(c("tosegment_v1_1"), .funs = na_if, 0) %>% # tosegment is the downstream segment to which water flows next. replace 0 (none next) with NA
     st_zm(drop = TRUE, what = "ZM") %>% #M dimension is inconsistent; prevents some subsetting
@@ -66,36 +65,36 @@ compute_endpoints <- function(national_network, out_ind) {
   gd_put(out_ind)
 }
 
-compute_up_down_stream <- function(reaches_bounded_ind, out_ind) {
+get_reach_direction <- function(seg_ids, reaches_bounded) {
+  seg_ids_df <- dplyr::filter(reaches_bounded, seg_id %in% seg_ids)
+  reaches_bounded_direction_subset <- seg_ids_df %>%
+    dplyr::mutate(
+      which_end_up = sapply(seg_id, function(segid) {
+        reach <- dplyr::filter(reaches_bounded, seg_id == segid)
+        if(!is.na(reach$to_seg)) { # non-river-mouths
+          # upstream endpoint is the one furthest from the next reach downstream
+          to_reach <- dplyr::filter(reaches_bounded, seg_id == reach$to_seg)
+          which.max(sf::st_distance(reach$end_points[[1]], to_reach$Shape))
+        } else { # river mouths
+          # upstream endpoint is the one closest to a previous reach upstream
+          from_reach <- dplyr::filter(reaches_bounded, to_seg == reach$seg_id) 
+          if(nrow(from_reach) > 0) { 
+            which.min(sf::st_distance(reach$end_points[[1]], from_reach$Shape))
+          } else { #A river mouth with no upstream segment (small coastal streams)
+            NA_integer_  
+          }
+        } # turns out that the first point is always the upstream point for the DRB at least. that's nice, but we won't rely on it.
+      }),
+      up_point = purrr::map2(end_points, which_end_up, function(endpoints, whichendup) { endpoints[[whichendup]] }),
+      down_point = purrr::map2(end_points, which_end_up, function(endpoints, whichendup) { endpoints[[c(1,2)[-whichendup]]] })) 
+  return(reaches_bounded_direction_subset)
+}
+
+compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
   
-  reaches_bounded <- readRDS(as_data_file(reaches_bounded_ind)) %>% 
+  reaches_bounded <- readRDS(sc_retrieve(reaches_bounded_ind)) %>% 
     ungroup()
   #~26 minutes for national single-threaded, ~5 minutes on 7 cores
-  get_reach_direction <- function(seg_ids, reaches_bounded) {
-    seg_ids_df <- dplyr::filter(reaches_bounded, seg_id %in% seg_ids)
-    reaches_bounded_direction_subset <- seg_ids_df %>%
-      dplyr::mutate(
-        which_end_up = sapply(seg_id, function(segid) {
-          reach <- dplyr::filter(reaches_bounded, seg_id == segid)
-          if(!is.na(reach$to_seg)) { # non-river-mouths
-            # upstream endpoint is the one furthest from the next reach downstream
-            to_reach <- dplyr::filter(reaches_bounded, seg_id == reach$to_seg)
-            which.max(sf::st_distance(reach$end_points[[1]], to_reach$Shape))
-          } else { # river mouths
-            # upstream endpoint is the one closest to a previous reach upstream
-            from_reach <- dplyr::filter(reaches_bounded, to_seg == reach$seg_id) 
-            if(nrow(from_reach) > 0) { 
-              which.min(sf::st_distance(reach$end_points[[1]], from_reach$Shape))
-            } else { #A river mouth with no upstream segment (small coastal streams)
-              NA_integer_  
-            }
-          } # turns out that the first point is always the upstream point for the DRB at least. that's nice, but we won't rely on it.
-        }),
-        up_point = purrr::map2(end_points, which_end_up, function(endpoints, whichendup) { endpoints[[whichendup]] }),
-        down_point = purrr::map2(end_points, which_end_up, function(endpoints, whichendup) { endpoints[[c(1,2)[-whichendup]]] })) 
-    return(reaches_bounded_direction_subset)
-  }
-  
   cl <- makeCluster(detectCores() - 1)
   clusterEvalQ(cl, lapply(c('sf', 'dplyr', 'purrr'), library, character.only = TRUE))
   seg_ids_split <- clusterSplit(cl, reaches_bounded$seg_id)
