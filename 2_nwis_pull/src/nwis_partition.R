@@ -1,4 +1,4 @@
-partition_inventory <- function(inventory_ind, nwis_pull_size, partitions_ind) {
+partition_inventory <- function(inventory_ind, nwis_pull_size, partitions_ind, pull_date) {
   
   inventory <- feather::read_feather(scipiper::sc_retrieve(inventory_ind,remake_file = '2_nwis_pull.yml'))
   
@@ -45,13 +45,10 @@ partition_inventory <- function(inventory_ind, nwis_pull_size, partitions_ind) {
   # Prepare one data_frame containing info about each site, including
   # the pull, constituent, and task name (where task name will become the core
   # of the filename)
-  pull_time <- Sys.time()
-  attr(pull_time, 'tzone') <- 'UTC'
-  pull_id <- format(pull_time, '%y%m%d%H%M%S')
 
   partitions <- atomic_groups %>%
-    mutate(PullDate = pull_time,
-           PullTask = sprintf('%s_%03d', pull_id, assignments)) %>%
+    mutate(PullDate = pull_date,
+           PullTask = sprintf('%s_%03d', pull_date, assignments)) %>%
     select(site_no, count_nu, PullTask, PullDate)
   
   feather::write_feather(partitions, as_data_file(partitions_ind))

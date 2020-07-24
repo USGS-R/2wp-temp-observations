@@ -32,7 +32,12 @@ targets:
   nwis_pull_size: 
     command: I(250000)
     
-  nwis_pull_date:
+  # dummy pull dates
+  # !! update these to rebuild inventory and NWIS pulls
+  nwis_dv_pull_date:
+    command: I('2020-07-24')
+    
+  nwis_uv_pull_date:
     command: I('2020-07-24')
     
   # -- get inventory of observations available to download -- #
@@ -43,10 +48,8 @@ targets:
     command: inventory_nwis(inv_ind = target_name,
       nwis_pull_params = nwis_pull_parameters, 
       service = I('dv'))
-    depends: nwis_pull_date
+    depends: nwis_dv_pull_date
       
-
-    
   # write summary table of inventory for quick PR comparison
   2_nwis_pull/inout/nwis_dv_inventory_summary.csv:
     command: summarize_nwis_inventory(inv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
@@ -57,6 +60,7 @@ targets:
     command: inventory_nwis(inv_ind = target_name,
       nwis_pull_params = nwis_pull_parameters, 
       service = I('uv'))
+    depends: nwis_uv_pull_date
     
   # create a table that compares services
   2_nwis_pull/inout/nwis_compare_services.feather.ind:
@@ -82,13 +86,15 @@ targets:
   2_nwis_pull/inout/nwis_dv_partition.feather.ind:
     command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
       nwis_pull_size, 
-      partitions_ind = target_name) 
+      partitions_ind = target_name,
+      pull_date = nwis_dv_pull_date) 
     
   #uv
   2_nwis_pull/inout/nwis_uv_partition.feather.ind:
     command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind', 
       nwis_pull_size, 
-      partitions_ind = target_name) 
+      partitions_ind = target_name,
+      pull_date = nwis_uv_pull_date) 
     
   # -- create and execute tasks from pull table -- #
 
