@@ -35,10 +35,10 @@ targets:
   # dummy pull dates
   # !! update these to rebuild inventory and NWIS pulls
   nwis_dv_pull_date:
-    command: I('2020-07-24')
+    command: c(I('2020-07-24'))
     
   nwis_uv_pull_date:
-    command: I('2020-07-24')
+    command: c(I('2020-07-24'))
     
   # -- get inventory of observations available to download -- #
 
