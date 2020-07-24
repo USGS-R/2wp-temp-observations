@@ -24,7 +24,7 @@ targets:
 # !! update pull date when you want to trigger a new inventory and pull
 # pull IDs will be generated with this date string YYYYMMDD
 
-  pull_date:
+  wqp_pull_date:
     command: c(I('20200723'))
       
 # -- get a CONUS inventory of available data for download -- #
@@ -49,7 +49,7 @@ targets:
       final_target = target_name,
       '1_wqp_pull/src/wqp_inventory.R')
     depends: 
-      - pull_date
+      - wqp_pull_date
       - wqp_pull_parameters
     
   # write a table that shows sites and records by state for each comparison
@@ -65,7 +65,7 @@ targets:
       wqp_pull_params = wqp_pull_parameters,
       inventory_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind',
       wqp_partition_cfg = wqp_partition_cfg,
-      pull_date = pull_date)
+      pull_date = wqp_pull_date)
     
   # -- pull data! -- #
 
