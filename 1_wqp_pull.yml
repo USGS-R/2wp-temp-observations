@@ -8,6 +8,7 @@ packages:
   - ggthemes
   - scipiper
   - dplyr
+  - xml2
   
 sources:
   - 1_wqp_pull/src/wqp_inventory.R
@@ -19,6 +20,13 @@ targets:
     depends:
       - 1_wqp_pull/out/wqp_data.rds.ind
       
+# -- set pull date -- #
+# !! update pull date when you want to trigger a new inventory and pull
+# pull IDs will be generated with this date string YYYYMMDD
+
+  pull_date:
+    command: c(I('20200723'))
+      
 # -- get a CONUS inventory of available data for download -- #
 
   wqp_pull_parameters:
@@ -26,18 +34,23 @@ targets:
     
   wqp_partition_cfg:
     command: yaml.load_file('1_wqp_pull/cfg/wqp_partition_config.yml')
-    
+  
   # -- get inventory of observations available to download -- #
 
   # get inventory of samples available on WQP
   # only filters by characteristicNames, and pulls all at the same time
+  
+  states:
+    command: get_states(states_url = I('https://www.waterqualitydata.us/Codes/statecode?countrycode=US'))
+    
   1_wqp_pull/inout/wqp_inventory.feather.ind:
-    command: inventory_wqp(
-      inv_ind = target_name,
-      wqp_pull_params = wqp_pull_parameters)
-      
-  1_wqp_pull/inout/wqp_inventory.feather:
-    command: gd_get('1_wqp_pull/inout/wqp_inventory.feather.ind')
+    command: do_inventory_tasks(
+      states = states, 
+      final_target = target_name,
+      '1_wqp_pull/src/wqp_inventory.R')
+    depends: 
+      - pull_date
+      - wqp_pull_parameters
     
   # write a table that shows sites and records by state for each comparison
   # between PRs
@@ -48,13 +61,11 @@ targets:
   
   1_wqp_pull/inout/wqp_pull_partitions.feather.ind:
     command: partition_wqp_inventory(
-      partitions_ind=target_name,
+      partitions_ind = target_name,
       wqp_pull_params = wqp_pull_parameters,
-      inventory_ind='1_wqp_pull/inout/wqp_inventory.feather.ind',
-      wqp_partition_cfg=wqp_partition_cfg)
-  
-  1_wqp_pull/inout/wqp_pull_partitions.feather:
-    command: gd_get('1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
+      inventory_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind',
+      wqp_partition_cfg = wqp_partition_cfg,
+      pull_date = pull_date)
     
   # -- pull data! -- #
 
@@ -76,12 +87,10 @@ targets:
       task_makefile='1_wqp_pull_tasks.yml',
       num_tries=I(30), sleep_on_error=I(20))
     depends:
-      - 1_wqp_pull/src/wqp_pull.R
-      
-  1_wqp_pull/out/wqp_data.rds:
-    command: gd_get('1_wqp_pull/out/wqp_data.rds.ind')
+      - 1_wqp_pull/src/get_wqp_data.R
     
   1_wqp_pull/out/wqp_data_summary.csv:
     command: summarize_wqp_data(
       data_ind = '1_wqp_pull/out/wqp_data.rds.ind',
       out_file = target_name)
+      
