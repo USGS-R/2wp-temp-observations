@@ -112,12 +112,21 @@ get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbo
   nwis_pull_params$service <- service
   nwis_pull_params$site <- partition$site_no
 
-  if (service == 'dv') { nwis_pull_params$statCd <- '00003' }
+  if (service == 'dv') { 
+    nwis_pull_params$statCd <- '00003' 
+    
+    # do the data pull
+    nwis_dat_time <- system.time({
+      nwis_dat <- do.call(readNWISdv, nwis_pull_params)
+    })
+  }
   
-  # do the data pull
-  nwis_dat_time <- system.time({
-    nwis_dat <- do.call(readNWISdata, nwis_pull_params)
-  })
+  if (service == 'uv') { 
+    # do the data pull
+    nwis_dat_time <- system.time({
+      nwis_dat <- do.call(readNWISuv, nwis_pull_params)
+    })
+  }
   
   if (verbose){
     message(sprintf(
@@ -126,6 +135,7 @@ get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbo
       nwis_dat_time['elapsed'],
       nrow(nwis_dat)))
   }
+
   # make nwis_dat a tibble, converting either from data.frame (the usual case) or
   # NULL (if there are no results)
   nwis_dat <- as_data_frame(nwis_dat)
