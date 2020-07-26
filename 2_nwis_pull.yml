@@ -20,8 +20,11 @@ sources:
 targets:
   2_nwis_pull:
     depends:
-      - 2_nwis_pull/out/nwis_dv_data.rds.ind
-      - 2_nwis_pull/out/nwis_uv_data.rds.ind
+      - 2_nwis_pull/inout/nwis_dv_inventory_summary.csv
+      - 2_nwis_pull/inout/nwis_uv_inventory_summary.csv
+      - 2_nwis_pull/out/nwis_dv_summary.csv
+      - 2_nwis_pull/out/nwis_uv_summary.csv
+      
       
 # -- get a CONUS inventory of available data for download -- #
 
@@ -83,16 +86,22 @@ targets:
 
   # -- partition data -- #
   # dv
+      
+  site_type_keep:
+    command: c(I(c('ST', 'ST-CA', 'ST-DCH', 'ST-TS', 'SP')))
+    
   2_nwis_pull/inout/nwis_dv_partition.feather.ind:
     command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
       nwis_pull_size, 
+      site_types = site_type_keep,
       partitions_ind = target_name,
       pull_date = nwis_dv_pull_date) 
     
   #uv
   2_nwis_pull/inout/nwis_uv_partition.feather.ind:
     command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind', 
-      nwis_pull_size, 
+      nwis_pull_size,
+      site_types = site_type_keep,
       partitions_ind = target_name,
       pull_date = nwis_uv_pull_date) 
     

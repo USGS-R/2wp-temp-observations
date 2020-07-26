@@ -1,6 +1,6 @@
-partition_inventory <- function(inventory_ind, nwis_pull_size, partitions_ind, pull_date) {
+partition_inventory <- function(inventory_ind, nwis_pull_size, site_types, partitions_ind, pull_date) {
   
-  inventory <- feather::read_feather(scipiper::sc_retrieve(inventory_ind,remake_file = '2_nwis_pull.yml'))
+  inventory <- feather::read_feather(scipiper::sc_retrieve(inventory_ind, remake_file = 'getters.yml'))
   
   # uv data count number is the number of days between the min and max observation days
   # assume that each day has 15 minute data, which is 96 obs/day
@@ -12,6 +12,7 @@ partition_inventory <- function(inventory_ind, nwis_pull_size, partitions_ind, p
   # first, get rid of duplicate sites from whatNWISdata call
   # do not need to pull sites twice
   atomic_groups <- inventory %>%
+    filter(site_tp_cd %in% site_types) %>%
     group_by(site_no) %>%
     slice(which.max(count_nu)) %>%
     ungroup() %>%

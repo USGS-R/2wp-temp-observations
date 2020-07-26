@@ -31,18 +31,12 @@ targets:
       in_ind = '1_wqp_pull/out/wqp_data.rds.ind',
       min_value, max_value, max_daily_range, 
       out_ind = target_name)
-   
-  5_data_munge/out/wqp_daily_depths.rds:
-    command: gd_get('5_data_munge/out/wqp_daily_depths.rds.ind')
     
   5_data_munge/out/wqp_daily_nodepths.rds.ind:
     command: munge_wqp_withoutdepths(
       in_ind = '1_wqp_pull/out/wqp_data.rds.ind',
       min_value, max_value, max_daily_range, 
       out_ind = target_name)
-   
-  5_data_munge/out/wqp_daily_nodepths.rds:
-    command: gd_get('5_data_munge/out/wqp_daily_nodepths.rds.ind')
     
   # NWIS uv data #
   5_data_munge/out/nwis_uv_daily.rds.ind:
@@ -50,9 +44,6 @@ targets:
       in_ind = '2_nwis_pull/out/nwis_uv_data.rds.ind',
       min_value, max_value, max_daily_range, 
       out_ind = target_name)
-   
-  5_data_munge/out/nwis_uv_daily.rds:
-    command: gd_get('5_data_munge/out/nwis_uv_daily.rds.ind')
     
   # NWIS dv data #
   5_data_munge/out/nwis_dv_daily.rds.ind:
@@ -60,9 +51,6 @@ targets:
       in_ind = '2_nwis_pull/out/nwis_dv_data.rds.ind',
       min_value, max_value, max_daily_range, 
       out_ind = target_name)
-   
-  5_data_munge/out/nwis_dv_daily.rds:
-    command: gd_get('5_data_munge/out/nwis_dv_daily.rds.ind')
     
   # EcoSHEDS data
   5_data_munge/out/ecosheds_munged.rds.ind:
@@ -78,10 +66,7 @@ targets:
       wqp_ind = '5_data_munge/out/wqp_daily_nodepths.rds.ind',
       ecosheds_ind = '5_data_munge/out/ecosheds_munged.rds.ind',
       out_ind = target_name)
-      
-  5_data_munge/out/daily_temperatures.rds:
-    command: gd_get('5_data_munge/out/daily_temperatures.rds.ind')
-    
+
   5_data_munge/out/all_sites.rds.ind:
     command: combine_all_sites(
       out_ind = target_name,
@@ -89,6 +74,3 @@ targets:
       nwis_uv_sites_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind',
       ecosheds_sites_ind = '4_other_sources/out/ecosheds_sites_ind',
       wqp_sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind')
-      
-  5_data_munge/out/all_sites.rds:
-    command: gd_get('5_data_munge/out/all_sites.rds.ind')

@@ -9,7 +9,7 @@ plan_nwis_pull <- function(partitions_ind, service) {
     out='2_nwis_pull/out',
     log='2_nwis_pull/log')
   
-  partitions <- feather::read_feather(scipiper::sc_retrieve(partitions_ind))
+  partitions <- feather::read_feather(scipiper::sc_retrieve(partitions_ind, remake_file = 'getters.yml'))
 
   # after all wanted data have been pulled, this function will be called but
   # doesn't need to create anything much, so just return NULL
@@ -99,7 +99,7 @@ combine_nwis_data <- function(ind_file, ...){
 # PullTask 
 filter_partitions <- function(partitions_ind, pull_task) {
   
-  partitions <- feather::read_feather(sc_retrieve(partitions_ind))
+  partitions <- feather::read_feather(sc_retrieve(partitions_ind, remake_file = 'getters.yml'))
 
   these_partitions <- dplyr::filter(partitions, PullTask==pull_task, count_nu > 0)
   
