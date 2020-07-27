@@ -109,7 +109,7 @@ filter_partitions <- function(partitions_ind, pull_task) {
 # pull a batch of NWIS observations, save locally, return .tind file
 get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbose = TRUE) {
 
-  nwis_pull_params$service <- service
+  #nwis_pull_params$service <- service
   nwis_pull_params$site <- partition$site_no
 
   if (service == 'dv') { 
@@ -150,30 +150,32 @@ choose_temp_column <- function(temp_dat) {
   # take all temperature columns and put into long df
   values <- temp_dat %>%
     select(-ends_with('_cd'), -agency_cd) %>%
-    tidyr::gather(key = 'col_name', value = 'temp_value', -site_no, -dateTime) %>%
+    tidyr::gather(key = 'col_name', value = 'temp_value', -site_no, -Date) %>%
     filter(!is.na(temp_value))
   
   # take all temperature cd columns and do the same thing
   codes <- temp_dat %>%
-    select(site_no, dateTime, ends_with('_cd'), -tz_cd, -agency_cd) %>%
-    tidyr::gather(key = 'col_name', value = 'cd_value', -site_no, -dateTime) %>%
+    select(site_no, Date, ends_with('_cd'), -agency_cd) %>%
+    tidyr::gather(key = 'col_name', value = 'cd_value', -site_no, -Date) %>%
     mutate(col_name = gsub('_cd', '', col_name)) %>%
     filter(!is.na(cd_value))
   
   # bring together so I have a long df with both temp and cd values
-  all_dat <- left_join(values, codes, by = c('site_no', 'dateTime', 'col_name'))
+  all_dat <- left_join(values, codes, by = c('site_no', 'Date', 'col_name'))
   
   # find which col_name has the most records for each site,
   # and keep that column
-  top_cols <- all_dat %>%
+  
+  
+  # finds the number of records per site across the whole dataset
+  # In instances where there are more than one site per date, the 
+  # the site with the most overall values is chosen.
+  fixed_dups <- all_dat %>%
     group_by(site_no, col_name) %>%
-    summarize(count_nu = n()) %>%
-    group_by(site_no) %>%
+    mutate(count_nu = n()) %>%
+    ungroup() %>%
+    group_by(site_no, Date) %>%
     slice(which.max(count_nu))
   
-  # reduce the data down to those site-top col combos
-  reduced_dat <- inner_join(all_dat, select(top_cols, site_no, col_name)) %>%
-    distinct()
-  
-  return(reduced_dat)
+  return(fixed_dups)
 }
