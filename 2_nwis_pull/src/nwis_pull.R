@@ -75,7 +75,6 @@ combine_nwis_data <- function(ind_file, ...){
   rds_files <- c(...)
   df_list <- list()
 
-
   for (i in seq_len(length(rds_files))){
   
     temp_dat <- readRDS(rds_files[i]) 
@@ -150,22 +149,23 @@ choose_temp_column <- function(temp_dat) {
   # take all temperature columns and put into long df
   values <- temp_dat %>%
     select(-ends_with('_cd'), -agency_cd) %>%
-    tidyr::gather(key = 'col_name', value = 'temp_value', -site_no, -Date) %>%
+    tidyr::gather(key = 'col_name', value = 'temp_value', -site_no, -contains('date', ignore.case = TRUE)) %>%
     filter(!is.na(temp_value))
   
   # take all temperature cd columns and do the same thing
   codes <- temp_dat %>%
-    select(site_no, Date, ends_with('_cd'), -agency_cd) %>%
-    tidyr::gather(key = 'col_name', value = 'cd_value', -site_no, -Date) %>%
+    select(site_no, contains('date', ignore.case = TRUE), ends_with('_cd'), -agency_cd) %>%
+    tidyr::gather(key = 'col_name', value = 'cd_value', -site_no, -contains('date', ignore.case = TRUE)) %>%
     mutate(col_name = gsub('_cd', '', col_name)) %>%
     filter(!is.na(cd_value))
   
+  date_col <- grep('date', names(codes), ignore.case = TRUE, value = TRUE)
+  
   # bring together so I have a long df with both temp and cd values
-  all_dat <- left_join(values, codes, by = c('site_no', 'Date', 'col_name'))
+  all_dat <- left_join(values, codes, by = c('site_no', date_col, 'col_name'))
   
   # find which col_name has the most records for each site,
   # and keep that column
-  
   
   # finds the number of records per site across the whole dataset
   # In instances where there are more than one site per date, the 
@@ -174,7 +174,7 @@ choose_temp_column <- function(temp_dat) {
     group_by(site_no, col_name) %>%
     mutate(count_nu = n()) %>%
     ungroup() %>%
-    group_by(site_no, Date) %>%
+    group_by(site_no, .data[[date_col]]) %>%
     slice(which.max(count_nu))
   
   return(fixed_dups)

@@ -18,37 +18,35 @@ get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = TRUE) 
   # do the data pull
   # first pull using readWQPdata, then if that fails, try POST
   
-  
-  getWQP <- function(wqp_args) {
-    wqp_dat_time <- tryCatch(
-      {
-        time_start <- Sys.time()
-        wqp_dat <- wqp_POST(wqp_args)
-        time_end <- Sys.time()
-        time_diff <- time_end - time_start
-        
-        return(list(time_diff, wqp_dat, 'POST'))
-        
-        
-      },
-      error = function(cond) {
-        message('Call to WQP using POST failed. Trying via readWQPdata. Original error message:')
-        message(cond)
-        
-        time_start <- Sys.time()
-        wqp_dat <- readWQPdata(siteid = wqp_args$siteid,
-                               characteristicName = wqp_args$characteristicName)
-        time_end <- Sys.time()
-        time_diff <- time_end - time_start
-        
-        return(list(time_diff, wqp_dat, 'readWQPdata'))
-      }
-    )
-    return(wqp_dat_time)
+  wqp_post_try <- function(wqp_args) {
+
+    time_start <- Sys.time()
+    wqp_dat <- wqp_POST(wqp_args)
+    time_end <- Sys.time()
+    time_diff <- time_end - time_start
+    
+    return(list(time_diff, wqp_dat, 'POST'))
   }
   
-  wqp_dat_time <- getWQP(wqp_args)
+  wqp_readWQP_try <- function(wqp_args) {
+    time_start <- Sys.time()
+    wqp_dat <- readWQPdata(siteid = wqp_args$siteid,
+                           characteristicName = wqp_args$characteristicName)
+    time_end <- Sys.time()
+    time_diff <- time_end - time_start
+    
+    return(list(time_diff, wqp_dat, 'readWQPdata'))
+  }
+    
+    wqp_out <- try(wqp_post_try(wqp_args))
+    
+    if (class(wqp_out) == 'try-error') {
+      message("Error with call to POST, trying dataRetrieval::readWQPdata")
+      wqp_out <- wqp_readWQP_try(wqp_args)
+    }
   
+  wqp_dat_time <- wqp_out
+
   # wqp_dat_time <- system.time({
   #   wqp_dat <- wqp_POST(wqp_args)
   # })
@@ -76,7 +74,7 @@ get_wqp_data <- function(data_file, partition, wqp_pull_params, verbose = TRUE) 
 
 # hack around w/ https://github.com/USGS-R/dataRetrieval/issues/434
 wqp_POST <- function(wqp_args_list){
-  wqp_url <- "https://www.waterqualitydata.us/Result/search"
+  wqp_url <- "https://www.waterqualitydata.us/data/Result/search"
   
   
   wqp_args_list$siteid <- wqp_args_list$siteid
@@ -135,10 +133,11 @@ combine_wqp_dat <- function(ind_file, ...){
              ResultCommentText, USGSPCode, `ResultDepthHeightMeasure/MeasureValue`, `ResultDepthHeightMeasure/MeasureUnitCode`, ProviderName) %>%
       mutate(PrecisionValue = as.numeric(PrecisionValue)) %>%
       mutate_at(vars(contains('MeasureValue')), as.numeric) %>%
+      mutate_at(vars(contains('Method')), as.character) %>%
+      mutate_at(vars(contains('Comment')), as.character) %>%
       mutate_if(is.logical, as.character) %>%
       select_if(~!all(is.na(.)))
   }
-  
   for (i in seq_len(length(rds_files))){
     df_list[[i]] <- readRDS2(rds_files[i])
   }
