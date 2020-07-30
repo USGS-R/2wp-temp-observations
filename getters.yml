@@ -48,7 +48,7 @@ targets:
   
   # download and unzip ecosheds data
   # created original indicator file with gd_confirm_posted('4_other_sources/in/sheds-public-data-20200622.zip.ind')
-  4_other_sources/in/sheds-public-data-20200622.zip:
+  4_other_sources/in/sheds-public-data-20200723.zip:
     command: gd_get('4_other_sources/in/sheds-public-data-20200622.zip.ind')
     
   4_other_sources/out/ecosheds_data.rds:
@@ -59,23 +59,20 @@ targets:
 
   
   ######## 5_data_munge ###########
+  5_data_munge/out/wqp_data_streams.rds:
+    command: gd_get('5_data_munge/out/wqp_data_streams.rds.ind')
   
   5_data_munge/out/ecosheds_munged.rds:
     command: gd_get('5_data_munge/out/ecosheds_munged.rds.ind')
-    
        
   5_data_munge/out/wqp_daily_depths.rds:
     command: gd_get('5_data_munge/out/wqp_daily_depths.rds.ind')
-    
    
   5_data_munge/out/wqp_daily_nodepths.rds:
     command: gd_get('5_data_munge/out/wqp_daily_nodepths.rds.ind')
    
-  5_data_munge/out/nwis_uv_daily.rds:
-    command: gd_get('5_data_munge/out/nwis_uv_daily.rds.ind')
-    
-  5_data_munge/out/nwis_dv_daily.rds:
-    command: gd_get('5_data_munge/out/nwis_dv_daily.rds.ind')
+  5_data_munge/out/nwis_daily.rds:
+    command: gd_get('5_data_munge/out/nwis_daily.rds.ind')
     
   5_data_munge/out/daily_temperatures.rds:
     command: gd_get('5_data_munge/out/daily_temperatures.rds.ind')
