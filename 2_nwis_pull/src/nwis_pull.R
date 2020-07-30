@@ -147,22 +147,28 @@ get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbo
 
 choose_temp_column <- function(temp_dat) {
   # take all temperature columns and put into long df
+  date_col <- grep('date', names(temp_dat), ignore.case = TRUE, value = TRUE)
+  
   values <- temp_dat %>%
     select(-ends_with('_cd'), -agency_cd) %>%
     tidyr::gather(key = 'col_name', value = 'temp_value', -site_no, -contains('date', ignore.case = TRUE)) %>%
-    filter(!is.na(temp_value))
+    filter(!is.na(temp_value)) %>%
+    mutate(Date = as.Date(.data[[date_col]])) %>%
+    group_by(site_no, Date, col_name) %>%
+    summarize(temp_value = round(mean(temp_value), 2), n = n()) %>% ungroup()
   
   # take all temperature cd columns and do the same thing
   codes <- temp_dat %>%
-    select(site_no, contains('date', ignore.case = TRUE), ends_with('_cd'), -agency_cd) %>%
+    select(site_no, contains('date', ignore.case = TRUE), ends_with('_cd'), -contains('agency'), -contains('tz')) %>%
     tidyr::gather(key = 'col_name', value = 'cd_value', -site_no, -contains('date', ignore.case = TRUE)) %>%
     mutate(col_name = gsub('_cd', '', col_name)) %>%
-    filter(!is.na(cd_value))
-  
-  date_col <- grep('date', names(codes), ignore.case = TRUE, value = TRUE)
+    filter(!is.na(cd_value)) %>%
+    mutate(Date = as.Date(.data[[date_col]])) %>%
+    group_by(site_no, Date, col_name) %>%
+    summarize(cd_value = paste0(unique(cd_value))) %>% ungroup()
   
   # bring together so I have a long df with both temp and cd values
-  all_dat <- left_join(values, codes, by = c('site_no', date_col, 'col_name'))
+  all_dat <- left_join(values, codes, by = c('site_no', 'Date', 'col_name'))
   
   # find which col_name has the most records for each site,
   # and keep that column
@@ -174,8 +180,10 @@ choose_temp_column <- function(temp_dat) {
     group_by(site_no, col_name) %>%
     mutate(count_nu = n()) %>%
     ungroup() %>%
-    group_by(site_no, .data[[date_col]]) %>%
-    slice(which.max(count_nu))
+    group_by(site_no, Date) %>%
+    slice(which.max(count_nu)) %>%
+    ungroup() %>%
+    select(site_no, Date, col_name, temp_value, cd_value, n)
   
   return(fixed_dups)
 }
