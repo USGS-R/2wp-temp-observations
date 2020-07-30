@@ -23,7 +23,7 @@ targets:
       
   4_other_sources/out/ecosheds_sites.rds.ind:
     command: unzip_extract_sites(
-      zip_ind = '4_other_sources/in/sheds-public-data-20200622.zip.ind',
+      zip_ind = '4_other_sources/in/sheds-public-data-20200723.zip.ind',
       out_ind = target_name)
       
   4_other_sources/out/ecosheds_summary.csv:
