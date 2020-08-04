@@ -112,7 +112,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #   reach_net_info <- lapply(unique(reaches_bounded$seg_id), function(segid) {
 #     reach <- filter(reaches_bounded, seg_id == segid)
 #     from_reaches <- filter(reaches_bounded, to_seg == reach$seg_id)
-#     
+# 
 #     reach_points <- tibble(
 #       point_raw = c(reach$up_point, from_reaches$down_point, reach$down_point),
 #       pt_seg = c(segid, from_reaches$seg_id, segid),
@@ -121,7 +121,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #       st_set_geometry('point_snapped') %>%
 #       st_set_crs(st_crs(reach)) %>%
 #       mutate(point_id = sprintf('%d%s', pt_seg, substring(pt_seg_flowend, 1, 1)))
-#     
+# 
 #     # split the reach into segments between neighboring pairs of points
 #     net_geoms <- lwgeom::st_split(st_geometry(reach), st_geometry(reach_points)) %>%
 #       st_collection_extract("LINESTRING")
@@ -138,7 +138,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #         })) # 'left' and 'right' are positions within the linestring
 #     net_vertices <- net_edges %>% # one row per edge end (non-unique vertex) but geometry is still the edge
 #       gather('subseg_lineend', 'point', left, right)
-#     
+# 
 #     # navigate the set of subsegments by point to figure out their order
 #     start_point <- filter(reach_points, pt_seg_flowend == 'up')
 #     # vertex_order will contain indices into net_vertices, ordered from upstream to downstream
@@ -172,7 +172,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #         pt_subseg_flowend=ifelse(substring(subseg_updown,1,1) == substring(subseg_lineend,1,1), 'up', 'down')) %>%
 #       ungroup() %>%
 #       select(subseg_id, subseg_seg, subseg_updown, geometry, pt_subseg_flowend, point)
-#     
+# 
 #     # join with info about how these subsegment endpoints relate to the original network
 #     net_vertices_ord_sf <- st_set_crs(do.call(c, net_vertices_ordered$point), st_crs(reach)) # format REORDERED vertex points for computing distances to reach points
 #     net_dists <- st_distance(net_vertices_ord_sf, reach_points) # row = net_vertex_ordered, col=reach_point
@@ -184,7 +184,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #       mutate(point_id = reach_points$point_id[reach_point_matches]) %>%
 #       left_join(st_drop_geometry(reach_points), by='point_id') %>%
 #       select(-reach_point_matches)
-#     
+# 
 #     # pull out a table of unique vertices, weeding out duplication in (1)
 #     # original reach endpoints or contributing reach end points and (2) the end
 #     # and start of subsequent line subsegments generated in this loop
@@ -202,7 +202,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #         ends_subseg = if(any(pt_subseg_flowend=='down')) subseg_id[pt_subseg_flowend=='down'] else as.character(NA)) %>%
 #       { st_set_geometry(., st_set_crs(do.call(st_sfc, .$point_geom), st_crs(reach))) } %>%
 #       select(-point_geom)
-#     
+# 
 #     # pull out a table of unique edges (subsegments)
 #     net_edges_dups <- net_info_flat %>%
 #       group_by(subseg_id) %>%
@@ -221,10 +221,10 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #         to_subseg = c(subseg_id[-1], ''),
 #         subseg_length = st_length(geometry)) %>%
 #       select(subseg_id, subseg_seg, subseg_updown, subseg_length, starts_with_pts, ends_with_pts, from_segs, to_seg, to_subseg, geometry)
-#     
+# 
 #     return(list(vertices=net_vertices_final, edges=net_edges_final))
 #   })
-#   
+# 
 #   # create vertex table from reach_net_info, then remove duplicates and
 #   # consolidate info in starts_subseg and ends_subseg
 #   reach_net_vertices <- do.call(rbind, lapply(reach_net_info, `[[`, 'vertices')) %>%
@@ -237,7 +237,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #       point_ids = paste(sort(unique(unlist(strsplit(point_ids, ';')))), collapse=';'),
 #       starts_subseg = paste(unique(na.exclude(starts_subseg)), collapse=';'), # should only be 0 or 1 per row, but this paste() turns 0 into ''
 #       ends_subseg = paste(sort(unique(na.exclude(ends_subseg))), collapse=';'))
-#   
+# 
 #   # Edge table needs more infor on to_subseg that can only be acquired now that we
 #   # have all the subsegs prepared. For each subseg, find out which seg it feeds
 #   # into and identify the specific subseg it feeds to
@@ -270,7 +270,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #       ends_with_pts = paste(grep(sprintf('(^|;)(%s)(;|$)', ends_with_pts), reach_net_vertices$point_ids, value=TRUE), collapse=';')) %>%
 #     ungroup() %>%
 #     rename(start_pt=starts_with_pts, end_pt=ends_with_pts)# it's really just one point at each end of each subseg
-#   
+# 
 #   # For plotting's sake, augment reach info with connections to the upstream reaches. In each row of
 #   # reaches_updown (an edge in the graph), the outlet (pour point) of from_seg is the upstream point, seg_id is used as
 #   # the ID of the segment's downstream-most point, and the segment
@@ -282,7 +282,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #     left_join(
 #       reach_key_info %>% st_set_geometry(NULL) %>% select(prev_subseg = subseg_id, subseg_id = to_subseg),
 #       by = 'subseg_id')
-#   
+# 
 #   # add seg_id_nat back into the reaches table
 #   reach_net_edges_nat <- reach_net_edges %>%
 #     mutate(last_in_seg = mapply(function(ss_s, e_p) { grepl(sprintf('(^|;)%dd($|;)', ss_s), e_p) }, subseg_seg, end_pt)) %>%
@@ -295,7 +295,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
 #   reach_net <- list(
 #     edges = reach_net_edges_nat,
 #     vertices = reach_net_vertices)
-#   
+# 
 #   saveRDS(reach_net, as_data_file(out_ind))
 #   gd_put(out_ind)
 # }

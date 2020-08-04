@@ -5,9 +5,11 @@ packages:
   - dplyr
   - sf
   - parallel
+  - nhdplusTools
   
 sources:
   - 6_network/src/get_network.R
+  - 6_network/src/match_sites_reaches.R
   
 targets:
 
@@ -34,4 +36,10 @@ targets:
       reaches_bounded_ind = '6_network/out/reach_endpoints.rds.ind')
   6_network/out/reach_direction.rds:
     command: gd_get('6_network/out/reach_direction.rds.ind')
-  
+    
+  6_network/out/site_flowlines.rds.ind:
+    command: get_site_flowlines(
+      outind = target_name,
+      reaches_direction_ind = '6_network/out/reach_direction.rds.ind',
+      sites = I('5_data_munge/out/all_sites.rds'), 
+      search_radius = 3000)
