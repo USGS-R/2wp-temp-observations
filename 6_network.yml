@@ -42,4 +42,4 @@ targets:
       outind = target_name,
       reaches_direction_ind = '6_network/out/reach_direction.rds.ind',
       sites = I('5_data_munge/out/all_sites.rds'), 
-      search_radius = 3000)
+      search_radius = 1000) #3000 runs out of memory
