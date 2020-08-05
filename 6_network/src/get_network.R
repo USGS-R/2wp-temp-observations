@@ -102,7 +102,15 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
                                fun = get_reach_direction, reaches_bounded)
   stopCluster(cl)
   results_bound <- do.call(bind_rows, cluster_results)
-  saveRDS(results_bound, file = as_data_file(out_ind))
+
+  shape_crs <- st_crs(results_bound$Shape)
+  reaches_direction <- results_bound %>% 
+    st_sf(crs = shape_crs, sf_column_name = 'Shape') %>% 
+    mutate(up_point = st_sfc(up_point, crs = shape_crs),
+           #would make sense to do the same here for end_points
+           down_point = st_sfc(down_point, crs = shape_crs))
+  
+  saveRDS(reaches_direction, file = as_data_file(out_ind))
   gd_put(out_ind)
 } 
 

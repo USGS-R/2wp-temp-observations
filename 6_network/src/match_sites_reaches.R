@@ -15,33 +15,15 @@ get_site_flowlines <- function(outind, reaches_direction_ind, sites, search_radi
     st_as_sf() %>% st_set_crs(4326) %>% 
     st_transform(st_crs(reaches_nhd_fields)) %>% 
     st_geometry()
-  gc()
-  row_midpoint <- round(nrow(sites_sf)/2)
-  
-  # sites_list <- list(chunk1 = sites_sf[1:row_midpoint], 
-  #                    chunk2 = sites_sf[(row_midpoint+1):length(sites_sf)])
-  # #split up into 2 chunks
-  # flowline_indices_list <- lapply(X = sites_list, 
-  #                                 FUN = nhdplusTools::get_flowline_index,
-  #                                 flines = reaches_nhd_fields,
-  #                                 points = X,
-  #                                 max_matches = 1, 
-  #                                 search_radius = search_radius)
+  message('matching flowlines with reaches...')
   flowline_indices <- nhdplusTools::get_flowline_index(flines = reaches_nhd_fields,
                                                        points = sites_sf,
                                                        max_matches = 1,
                                                        search_radius = search_radius)
   sites_sf_index <- tibble(Shape_site = sites_sf,
                            index = 1:length(sites_sf))
-  #TODO: move to earlier steps, this should be set up for use elsewhere
-  sites_crs <- st_crs(sites_sf)
-  reaches_direction <- reaches_direction %>% 
-    st_sf(crs = sites_crs, sf_column_name = 'Shape') %>% 
-    mutate(up_point = st_sfc(up_point, crs = sites_crs),
-           down_point = st_sfc(down_point, crs = sites_crs))
-           #end_points = st_sfc(end_points, crs = sites_crs)) 
 
-  
+  message("rejoining with other geometries, adjusting matches for upstream proximity...")
   #rejoin to original reaches df, get up/downstream distance
   flowline_indices_joined <- flowline_indices %>% 
     select(seg_id = COMID, -REACHCODE, -REACH_meas, everything()) %>% 
@@ -61,7 +43,8 @@ get_site_flowlines <- function(outind, reaches_direction_ind, sites, search_radi
                                      false = list(seg_id),
                                      missing = list(NA_integer_)))
   saveRDS(sites_move_upstream, file = as_data_file(outind))
-  gd_put(out_ind)
+  message("uploading...")
+  gd_put(outind)
 }
 
 
