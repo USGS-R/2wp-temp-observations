@@ -73,3 +73,67 @@ check_upstream_reach <- function(matched_seg_id, down_up_ratio, reaches_directio
     return(list(matched_seg_id))
   }
 }
+
+sample_reaches <- function(matched_sites_ind) {
+  #TODO: add stream order from NHD
+  matched_sites <- readRDS(sc_retrieve(matched_sites_ind, remake_file = "6_network.yml")) %>% 
+    ungroup()
+  random_site_reaches_seg_ids <- matched_sites %>% select(seg_id) %>% 
+    distinct() %>% slice_sample(n = 100) %>% pull(seg_id)
+  random_site_reaches <- matched_sites %>% filter(seg_id %in% random_site_reaches_seg_ids)
+  longest_reaches <- matched_sites %>% slice_max(order_by = shape_length, n = 20)
+  shortest_reaches <- matched_sites %>% slice_min(order_by = shape_length, n = 20)
+  most_sites_reaches_seg_ids <- matched_sites %>% select(seg_id, id) %>% 
+    group_by(seg_id) %>% 
+    summarize(n_sites = n()) %>% 
+    slice_max(order_by = n_sites, n = 20) %>% 
+    pull(seg_id)
+  most_sites_reaches <- matched_sites %>% filter(seg_id %in% most_sites_reaches_seg_ids)
+  reaches_list <- list(random_site_reaches = random_site_reaches,
+                       longest_reaches = longest_reaches,
+                       shortest_reaches = shortest_reaches,
+                       most_sites_reaches = most_sites_reaches)
+  return(reaches_list)
+}
+
+plot_reach_and_matched_sites <- function(outfile, reach_and_sites, network_latlon,
+                                         category = NULL) {
+  #list on map: site id, reach id, distance, number of sites matched to reach, 
+  #plot network, with reach highlighted, and matched site
+  #use satellite basemap
+  #first get a bbox to use
+  assert_that(length(unique(reach_and_sites$Shape)) == 1)
+  reach_bbox <- reach_and_sites$Shape %>% 
+    st_transform(crs = 4326) %>% 
+    st_bbox() + c(-0.1, -0.05, 0.1, 0.05)
+  reach_latlon <- reach_and_sites$Shape[1] %>% 
+    st_transform(4326)
+  sites_latlon <- reach_and_sites %>%
+    st_set_geometry(value = 'Shape_site') %>% 
+    st_transform(4326) %>% 
+    mutate(id = as.character(id))
+  downstream_point <- reach_and_sites$down_point[1] %>% 
+    st_transform(4326)
+  reaches_clipped_latlon <- network_latlon %>% 
+    st_crop(reach_bbox)
+  names(reach_bbox) <- c('left', 'bottom', 'right', 'top')
+  base_map <- get_map(location = reach_bbox)
+  map_title <- sprintf("%s seg_id: %s; %s sites matched", category,
+                       reach_and_sites$seg_id[1], nrow(reach_and_sites))
+  browser()
+  final_map <- ggmap(base_map) +
+    geom_sf(data = reaches_clipped_latlon, inherit.aes = FALSE) +
+    geom_sf(data=reach_latlon, inherit.aes = FALSE,
+            color = "red") + 
+    geom_sf(data = downstream_point, shape = 15, inherit.aes = FALSE) +
+    geom_sf(data = sites_latlon, inherit.aes = FALSE,
+            mapping = aes(color = id), shape = 1, size = 3) +
+    ggtitle(map_title, subtitle = sprintf("Matched reach length: %d m\nBlack square = reach outlet", 
+                                          round(reach_and_sites$shape_length)))
+  ggsave(filename = outfile, plot = final_map)  
+}
+
+transform_network_file <- function(network_ind, crs) {
+  network <- readRDS(sc_retrieve(network_ind))
+  network$Shape <- st_transform(network$Shape, crs)
+}

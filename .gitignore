@@ -26,4 +26,5 @@ old/*
 # ignore geodb for national network
 6_network/in/*/*
 6_network/out/*.rds
+*.png
 *.zip
