@@ -16,6 +16,7 @@ get_site_flowlines <- function(outind, reaches_direction_ind, sites, search_radi
     st_transform(st_crs(reaches_nhd_fields)) %>% 
     st_geometry()
   message('matching flowlines with reaches...')
+  browser()
   flowline_indices <- nhdplusTools::get_flowline_index(flines = reaches_nhd_fields,
                                                        points = sites_sf,
                                                        max_matches = 1,
@@ -34,6 +35,7 @@ get_site_flowlines <- function(outind, reaches_direction_ind, sites, search_radi
            site_downstream_distance = st_distance(x = Shape_site, y = down_point,
                                                   by_element = TRUE),
            down_up_ratio = as.numeric(site_downstream_distance / site_upstream_distance))
+  
   sites_move_upstream <- flowline_indices_joined %>% 
     rowwise() %>% 
     mutate(seg_id_reassign = if_else(down_up_ratio > 1,
@@ -41,7 +43,15 @@ get_site_flowlines <- function(outind, reaches_direction_ind, sites, search_radi
                                                                  down_up_ratio = down_up_ratio,
                                                                  reaches_direction = reaches_direction),
                                      false = list(seg_id),
-                                     missing = list(NA_integer_)))
+                                     missing = list(NA_integer_))) %>% 
+    rename(seg_id_orig_match = seg_id) %>% 
+    unnest_longer(seg_id_reassign) %>% #handle when site matched to two reaches at intersection
+    select(-to_seg, -seg_id_nhm, -Version, -shape_length, -Shape, -end_points, 
+           -which_end_up, -up_point, -down_point) %>% 
+    #drop columns and rejoin to get correct geometries for sites that were 
+    #moved upstream
+    left_join(reaches_direction, by = c(seg_id_reassign = 'seg_id'))
+    
   saveRDS(sites_move_upstream, file = as_data_file(outind))
   message("uploading...")
   gd_put(outind)
@@ -78,59 +88,22 @@ sample_reaches <- function(matched_sites_ind) {
   #TODO: add stream order from NHD
   matched_sites <- readRDS(sc_retrieve(matched_sites_ind, remake_file = "6_network.yml")) %>% 
     ungroup()
-  random_site_reaches_seg_ids <- matched_sites %>% select(seg_id) %>% 
-    distinct() %>% slice_sample(n = 100) %>% pull(seg_id)
-  random_site_reaches <- matched_sites %>% filter(seg_id %in% random_site_reaches_seg_ids)
+  random_site_reaches_seg_ids <- matched_sites %>% select(seg_id_reassign) %>% 
+    distinct() %>% slice_sample(n = 100) %>% pull(seg_id_reassign)
+  random_site_reaches <- matched_sites %>% filter(seg_id_reassign %in% random_site_reaches_seg_ids)
   longest_reaches <- matched_sites %>% slice_max(order_by = shape_length, n = 20)
   shortest_reaches <- matched_sites %>% slice_min(order_by = shape_length, n = 20)
-  most_sites_reaches_seg_ids <- matched_sites %>% select(seg_id, id) %>% 
-    group_by(seg_id) %>% 
+  most_sites_reaches_seg_ids <- matched_sites %>% select(seg_id_reassign, id) %>% 
+    group_by(seg_id_reassign) %>% 
     summarize(n_sites = n()) %>% 
     slice_max(order_by = n_sites, n = 20) %>% 
-    pull(seg_id)
-  most_sites_reaches <- matched_sites %>% filter(seg_id %in% most_sites_reaches_seg_ids)
+    pull(seg_id_reassign)
+  most_sites_reaches <- matched_sites %>% filter(seg_id_reassign %in% most_sites_reaches_seg_ids)
   reaches_list <- list(random_site_reaches = random_site_reaches,
                        longest_reaches = longest_reaches,
                        shortest_reaches = shortest_reaches,
                        most_sites_reaches = most_sites_reaches)
   return(reaches_list)
-}
-
-plot_reach_and_matched_sites <- function(outfile, reach_and_sites, network_latlon,
-                                         category = NULL) {
-  #list on map: site id, reach id, distance, number of sites matched to reach, 
-  #plot network, with reach highlighted, and matched site
-  #use satellite basemap
-  #first get a bbox to use
-  assert_that(length(unique(reach_and_sites$Shape)) == 1)
-  reach_bbox <- reach_and_sites$Shape %>% 
-    st_transform(crs = 4326) %>% 
-    st_bbox() + c(-0.1, -0.05, 0.1, 0.05)
-  reach_latlon <- reach_and_sites$Shape[1] %>% 
-    st_transform(4326)
-  sites_latlon <- reach_and_sites %>%
-    st_set_geometry(value = 'Shape_site') %>% 
-    st_transform(4326) %>% 
-    mutate(id = as.character(id))
-  downstream_point <- reach_and_sites$down_point[1] %>% 
-    st_transform(4326)
-  reaches_clipped_latlon <- network_latlon %>% 
-    st_crop(reach_bbox)
-  names(reach_bbox) <- c('left', 'bottom', 'right', 'top')
-  base_map <- get_map(location = reach_bbox)
-  map_title <- sprintf("%s seg_id: %s; %s sites matched", category,
-                       reach_and_sites$seg_id[1], nrow(reach_and_sites))
-  browser()
-  final_map <- ggmap(base_map) +
-    geom_sf(data = reaches_clipped_latlon, inherit.aes = FALSE) +
-    geom_sf(data=reach_latlon, inherit.aes = FALSE,
-            color = "red") + 
-    geom_sf(data = downstream_point, shape = 15, inherit.aes = FALSE) +
-    geom_sf(data = sites_latlon, inherit.aes = FALSE,
-            mapping = aes(color = id), shape = 1, size = 3) +
-    ggtitle(map_title, subtitle = sprintf("Matched reach length: %d m\nBlack square = reach outlet", 
-                                          round(reach_and_sites$shape_length)))
-  ggsave(filename = outfile, plot = final_map)  
 }
 
 transform_network_file <- function(network_ind, crs) {
