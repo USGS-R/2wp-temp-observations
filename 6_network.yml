@@ -23,6 +23,7 @@ targets:
        - 6_network/out/random_site_reaches_plots.zip.ind
        - 6_network/out/site_reach_distances.png.ind
        - 6_network/out/sites_per_reach.png.ind
+       - 6_network/out/site_distance_vs_reach_length.png.ind
       
 
   # download and indicate the national geospatial fabric.
@@ -58,57 +59,58 @@ targets:
   6_network/out/site_flowlines.rds:
     command: gd_get('6_network/out/site_flowlines.rds.ind')
 
-  # reaches_direction_latlon:
-  #   command: transform_network_file('6_network/out/site_flowlines.rds.ind',
-  #                                   crs = I(4326))
-  # 
-  # #from the set of reaches that were matched with sites, generate graphics
-  # #for a random subset, plus focus on edge cases:
-  # # longest/shortest reaches, most sites, network density?  low stream order?
-  # #summary metrics?
-  # reaches_to_check:
-  #   command: sample_reaches(matched_sites_ind = '6_network/out/site_flowlines.rds.ind')
-  # 
-  # 
-  # ##### visuals ######
-  # 6_network/out/longest_reaches_plots.zip.ind:
-  #   command: make_site_reach_plots(outind = target_name,
-  #                                  reaches_to_check = reaches_to_check,
-  #                                  category = I('longest_reaches'),
-  #                                  '6_network/src/plot_tasks.R',
-  #                                  '6_network/src/match_sites_reaches.R')
-  # 
-  # 6_network/out/shortest_reaches_plots.zip.ind:
-  #   command: make_site_reach_plots(outind = target_name,
-  #                                  reaches_to_check = reaches_to_check,
-  #                                  category = I('shortest_reaches'),
-  #                                  '6_network/src/plot_tasks.R',
-  #                                  '6_network/src/match_sites_reaches.R')
-  # 
-  # 6_network/out/most_sites_reaches_plots.zip.ind:
-  #   command: make_site_reach_plots(outind = target_name,
-  #                                  reaches_to_check = reaches_to_check,
-  #                                  category = I('most_sites_reaches'),
-  #                                  '6_network/src/plot_tasks.R',
-  #                                  '6_network/src/match_sites_reaches.R')
-  #                                  
-  # 6_network/out/random_site_reaches_plots.zip.ind:
-  #   command: make_site_reach_plots(outind = target_name,
-  #                                  reaches_to_check = reaches_to_check,
-  #                                  category = I('random_site_reaches'),
-  #                                  '6_network/src/plot_tasks.R',
-  #                                  '6_network/src/match_sites_reaches.R')  
-  #                                  
-  # 
-  #                                  
-  # 6_network/out/site_reach_distances.png.ind:
-  #   command: site_reach_distance_plot(target_name, 
-  #                                     sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')
-  # 6_network/out/site_reach_distances.png:
-  #   command: gd_get('6_network/out/site_reach_distances.png.ind')
-  #                                     
-  # 6_network/out/sites_per_reach.png.ind:
-  #   command: sites_per_reach_plot(target_name, 
-  #                                     sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')
-  # 6_network/out/sites_per_reach.png:
-  #   command: gd_get('6_network/out/sites_per_reach.png.ind')
+  reaches_direction_latlon:
+    command: transform_network_file('6_network/out/site_flowlines.rds.ind',
+                                    crs = I(4326))
+
+  #from the set of reaches that were matched with sites, generate graphics
+  #for a random subset, plus focus on edge cases:
+  # longest/shortest reaches, most sites, network density?  low stream order?
+  #summary metrics?
+  reaches_to_check:
+    command: sample_reaches(matched_sites_ind = '6_network/out/site_flowlines.rds.ind')
+
+
+  ##### visuals ######
+  # gd_get these indicator files to grab the files from drive
+  6_network/out/longest_reaches_plots.zip.ind:
+    command: make_site_reach_plots(outind = target_name,
+                                   reaches_to_check = reaches_to_check,
+                                   category = I('longest_reaches'),
+                                   '6_network/src/plot_tasks.R',
+                                   '6_network/src/match_sites_reaches.R')
+
+  6_network/out/shortest_reaches_plots.zip.ind:
+    command: make_site_reach_plots(outind = target_name,
+                                   reaches_to_check = reaches_to_check,
+                                   category = I('shortest_reaches'),
+                                   '6_network/src/plot_tasks.R',
+                                   '6_network/src/match_sites_reaches.R')
+
+  6_network/out/most_sites_reaches_plots.zip.ind:
+    command: make_site_reach_plots(outind = target_name,
+                                   reaches_to_check = reaches_to_check,
+                                   category = I('most_sites_reaches'),
+                                   '6_network/src/plot_tasks.R',
+                                   '6_network/src/match_sites_reaches.R')
+
+  6_network/out/random_site_reaches_plots.zip.ind:
+    command: make_site_reach_plots(outind = target_name,
+                                   reaches_to_check = reaches_to_check,
+                                   category = I('random_site_reaches'),
+                                   '6_network/src/plot_tasks.R',
+                                   '6_network/src/match_sites_reaches.R')
+
+
+
+  6_network/out/site_reach_distances.png.ind:
+    command: site_reach_distance_plot(target_name,
+                                      sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')
+
+  6_network/out/sites_per_reach.png.ind:
+    command: sites_per_reach_plot(target_name,
+                                      sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')
+
+  6_network/out/site_distance_vs_reach_length.png.ind:
+    command: distance_vs_reach_length_plot(target_name, 
+                                          sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')

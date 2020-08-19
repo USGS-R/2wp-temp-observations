@@ -4,7 +4,6 @@ plot_reach_and_matched_sites <- function(outfile, reach_and_sites, network_latlo
   #plot network, with reach highlighted, and matched site
   #use satellite basemap
   #first get a bbox to use
-  browser()
   assert_that(length(unique(reach_and_sites$Shape)) == 1)
   reach_bbox <- reach_and_sites$Shape %>% 
     st_transform(crs = 4326) %>% 
@@ -32,8 +31,10 @@ plot_reach_and_matched_sites <- function(outfile, reach_and_sites, network_latlo
     geom_sf(data = sites_latlon, inherit.aes = FALSE,
             mapping = aes(color = id), shape = 1, size = 3,
             show.legend = use_site_legend) +
-    ggtitle(map_title, subtitle = sprintf("Matched reach length: %d m\nBlack square = reach outlet", 
-                                          round(reach_and_sites$shape_length))) +
+    labs(title = map_title, 
+         subtitle = sprintf("Matched reach length: %d m\nBlack square = reach outlet", 
+                                          round(reach_and_sites$shape_length)),
+         caption = paste('Rendered', Sys.time())) +
     scalebar(transform = TRUE, dist_unit = "km", 
              dist = 1, 
              data = st_sf(reaches_clipped_latlon),
@@ -46,7 +47,6 @@ plot_reach_and_matched_sites <- function(outfile, reach_and_sites, network_latlo
 
 site_reach_distance_plot <- function(outind, sites_reaches_ind) {
   reaches_matched <- readRDS(sc_retrieve(sites_reaches_ind))
-  browser()
   ggplot(data = reaches_matched, aes(x = offset)) + 
     geom_histogram(binwidth = 10) +
     labs(title = "Distribution of site offsets from initially matched reach*",
@@ -68,6 +68,19 @@ sites_per_reach_plot <- function(outind, sites_reaches_ind) {
                            axis.ticks.x = element_blank()) +
     labs(title = "Sites matched per reach",
          y = "Number of sites")
+  ggsave(filename = as_data_file(outind))
+  gd_put(outind)
+}
+
+distance_vs_reach_length_plot <- function(outind, sites_reaches_ind) {
+  reaches_matched <- readRDS(sc_retrieve(sites_reaches_ind))
+  sites_distances_long <- reaches_matched %>% 
+    select(shape_length, site_upstream_distance, site_downstream_distance) %>% 
+    pivot_longer(cols = contains('distance'), names_to = 'measure',
+                 names_prefix = 'site_', values_to = 'distance')
+  ggplot(sites_distances_long, aes(x = shape_length/1000, y = as.numeric(distance)/1000)) +
+        geom_hex() + facet_wrap('measure') +
+        labs(x = "Reach length (km)", y = "Distance to reach endpoint (km)") + coord_fixed()
   ggsave(filename = as_data_file(outind))
   gd_put(outind)
 }

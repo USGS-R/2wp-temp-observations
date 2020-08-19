@@ -29,7 +29,7 @@ make_site_reach_plots <- function(outind, reaches_to_check, category, ...) {
     makefile = task_makefile_name,
     include = '6_network.yml',
     sources = c(...),
-    packages = c('sf', 'tidyverse', 'ggmap'),
+    packages = c('sf', 'tidyverse', 'ggmap', 'assertthat', 'ggsn'),
     finalize_funs = 'zip_up_plots',
     final_targets = sprintf('6_network/out/%s_plots.zip.ind', category),
     as_promises = TRUE

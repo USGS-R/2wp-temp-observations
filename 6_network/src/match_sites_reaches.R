@@ -16,7 +16,6 @@ get_site_flowlines <- function(outind, reaches_direction_ind, sites, search_radi
     st_transform(st_crs(reaches_nhd_fields)) %>% 
     st_geometry()
   message('matching flowlines with reaches...')
-  browser()
   flowline_indices <- nhdplusTools::get_flowline_index(flines = reaches_nhd_fields,
                                                        points = sites_sf,
                                                        max_matches = 1,
@@ -43,7 +42,7 @@ get_site_flowlines <- function(outind, reaches_direction_ind, sites, search_radi
                                                                  down_up_ratio = down_up_ratio,
                                                                  reaches_direction = reaches_direction),
                                      false = list(seg_id),
-                                     missing = list(NA_integer_))) %>% 
+                                     missing = list(seg_id))) %>% 
     rename(seg_id_orig_match = seg_id) %>% 
     unnest_longer(seg_id_reassign) %>% #handle when site matched to two reaches at intersection
     select(-to_seg, -seg_id_nhm, -Version, -shape_length, -Shape, -end_points, 
