@@ -20,8 +20,11 @@ sources:
 targets:
   2_nwis_pull:
     depends:
-      - 2_nwis_pull/out/nwis_dv_data.rds.ind
-      - 2_nwis_pull/out/nwis_uv_data.rds.ind
+      - 2_nwis_pull/inout/nwis_dv_inventory_summary.csv
+      - 2_nwis_pull/inout/nwis_uv_inventory_summary.csv
+      - 2_nwis_pull/out/nwis_dv_summary.csv
+      - 2_nwis_pull/out/nwis_uv_summary.csv
+      
       
 # -- get a CONUS inventory of available data for download -- #
 
@@ -32,6 +35,14 @@ targets:
   nwis_pull_size: 
     command: I(250000)
     
+  # dummy pull dates
+  # !! update these to rebuild inventory and NWIS pulls
+  nwis_dv_pull_date:
+    command: c(I('20200726'))
+    
+  nwis_uv_pull_date:
+    command: c(I('20200726'))
+    
   # -- get inventory of observations available to download -- #
 
   # dv data
@@ -40,10 +51,8 @@ targets:
     command: inventory_nwis(inv_ind = target_name,
       nwis_pull_params = nwis_pull_parameters, 
       service = I('dv'))
+    depends: nwis_dv_pull_date
       
-  2_nwis_pull/inout/nwis_dv_inventory.feather:
-    command: gd_get('2_nwis_pull/inout/nwis_dv_inventory.feather.ind')
-    
   # write summary table of inventory for quick PR comparison
   2_nwis_pull/inout/nwis_dv_inventory_summary.csv:
     command: summarize_nwis_inventory(inv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
@@ -54,17 +63,12 @@ targets:
     command: inventory_nwis(inv_ind = target_name,
       nwis_pull_params = nwis_pull_parameters, 
       service = I('uv'))
-      
-  2_nwis_pull/inout/nwis_uv_inventory.feather:
-    command: gd_get('2_nwis_pull/inout/nwis_uv_inventory.feather.ind')
+    depends: nwis_uv_pull_date
     
   # create a table that compares services
   2_nwis_pull/inout/nwis_compare_services.feather.ind:
     command: compare_services(dv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
       uv_ind = '2_nwis_pull/inout/nwis_uv_inventory.feather.ind', compare_ind = target_name)
-    
-  2_nwis_pull/inout/nwis_compare_services.feather:
-    command: gd_get('2_nwis_pull/inout/nwis_compare_services.feather.ind')
     
   # filter the UV inventory to only those sites that are not in DV
   # this isn't perfect - as some sites overlap but don't have the same data.
@@ -74,9 +78,6 @@ targets:
       compare_ind = '2_nwis_pull/inout/nwis_compare_services.feather.ind',
       out_ind = target_name)
     
-  2_nwis_pull/inout/nwis_uv_inventory_reduced.feather:
-    command: gd_get('2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind')
-    
   # write summary table of inventory for quick PR comparison
   2_nwis_pull/inout/nwis_uv_inventory_summary.csv:
     command: summarize_nwis_inventory(inv_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind', 
@@ -85,22 +86,24 @@ targets:
 
   # -- partition data -- #
   # dv
+      
+  site_type_keep:
+    command: c(I(c('ST', 'ST-CA', 'ST-DCH', 'ST-TS', 'SP')))
+    
   2_nwis_pull/inout/nwis_dv_partition.feather.ind:
     command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
       nwis_pull_size, 
-      partitions_ind = target_name) 
- 
-  2_nwis_pull/inout/nwis_dv_partition.feather:
-    command: gd_get('2_nwis_pull/inout/nwis_dv_partition.feather.ind')
+      site_types = site_type_keep,
+      partitions_ind = target_name,
+      pull_date = nwis_dv_pull_date) 
     
   #uv
   2_nwis_pull/inout/nwis_uv_partition.feather.ind:
     command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind', 
-      nwis_pull_size, 
-      partitions_ind = target_name) 
- 
-  2_nwis_pull/inout/nwis_uv_partition.feather:
-    command: gd_get('2_nwis_pull/inout/nwis_uv_partition.feather.ind')
+      nwis_pull_size,
+      site_types = site_type_keep,
+      partitions_ind = target_name,
+      pull_date = nwis_uv_pull_date) 
     
   # -- create and execute tasks from pull table -- #
 
@@ -121,9 +124,6 @@ targets:
       num_tries=I(30), sleep_on_error=I(20))
     depends:
       - 2_nwis_pull/src/nwis_pull.R
-      
-  2_nwis_pull/out/nwis_dv_data.rds:
-    command: gd_get('2_nwis_pull/out/nwis_dv_data.rds.ind')
   
   # add summary and push to github  
   2_nwis_pull/out/nwis_dv_summary.csv:
@@ -148,10 +148,7 @@ targets:
       num_tries=I(30), sleep_on_error=I(20))
     depends:
       - 2_nwis_pull/src/nwis_pull.R
-      
-  2_nwis_pull/out/nwis_uv_data.rds:
-    command: gd_get('2_nwis_pull/out/nwis_uv_data.rds.ind')
-    
+
   # add summary and push to github  
   2_nwis_pull/out/nwis_uv_summary.csv:
     command: summarize_nwis_data(

@@ -24,7 +24,7 @@ inventory_nwis <- function(inv_ind, nwis_pull_params, service) {
 
 summarize_nwis_inventory <- function(inv_ind, out_file) {
   
-  nwis_inventory <- feather::read_feather(sc_retrieve(inv_ind))
+  nwis_inventory <- feather::read_feather(sc_retrieve(inv_ind, remake_file = 'getters.yml'))
   
   all <- data.frame(n_sites = nrow(nwis_inventory), 
                     n_records = sum(nwis_inventory$count_nu), 
@@ -37,7 +37,7 @@ summarize_nwis_inventory <- function(inv_ind, out_file) {
 }
 
 summarize_nwis_data <- function(data_ind, out_file) {
-  nwis_data <- readRDS(sc_retrieve(data_ind))
+  nwis_data <- readRDS(sc_retrieve(data_ind, remake_file = 'getters.yml'))
   
   summary <- data.frame(n_obs = nrow(nwis_data),
                         n_sites = length(unique(nwis_data$site_no)))

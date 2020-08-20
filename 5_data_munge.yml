@@ -6,11 +6,12 @@ packages:
   
 sources:
   - 5_data_munge/src/munge_data_files.R
+  - 5_data_munge/src/munge_wqp_files.R
   
 targets:
   5_data_munge:
     depends:
-      - 5_data_munge/out/daily_temperatures.rds.ind
+      - 5_data_munge/out/daily_temperatures_summary.csv
       - 5_data_munge/out/all_sites.rds.ind
     
 # -- For WQP and NWISuv, first do a coarse QA, then reduce to daily  -- #
@@ -25,70 +26,61 @@ targets:
   max_daily_range:
     command: I(30)
     
-  # first, wqp data # 
+  stream_types:
+    command: c(I(c('Stream', 'Spring')))
+    
+  # first, limit to stream data
+  5_data_munge/out/wqp_data_streams.rds.ind:
+    command: filter_site_types(
+      in_ind = '1_wqp_pull/out/wqp_data.rds.ind',
+      sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind',
+      keep_types = stream_types, 
+      out_ind = target_name)
+      
   5_data_munge/out/wqp_daily_depths.rds.ind:
     command: munge_wqp_withdepths(
-      in_ind = '1_wqp_pull/out/wqp_data.rds.ind',
+      in_ind = '5_data_munge/out/wqp_data_streams.rds.ind',
       min_value, max_value, max_daily_range, 
       out_ind = target_name)
-   
-  5_data_munge/out/wqp_daily_depths.rds:
-    command: gd_get('5_data_munge/out/wqp_daily_depths.rds.ind')
     
   5_data_munge/out/wqp_daily_nodepths.rds.ind:
     command: munge_wqp_withoutdepths(
-      in_ind = '1_wqp_pull/out/wqp_data.rds.ind',
+      in_ind = '5_data_munge/out/wqp_data_streams.rds.ind',
       min_value, max_value, max_daily_range, 
       out_ind = target_name)
-   
-  5_data_munge/out/wqp_daily_nodepths.rds:
-    command: gd_get('5_data_munge/out/wqp_daily_nodepths.rds.ind')
     
   # NWIS uv data #
-  5_data_munge/out/nwis_uv_daily.rds.ind:
-    command: munge_nwis_uv(
-      in_ind = '2_nwis_pull/out/nwis_uv_data.rds.ind',
-      min_value, max_value, max_daily_range, 
+  5_data_munge/out/nwis_daily.rds.ind:
+    command: munge_nwis(
+      dv_ind = '2_nwis_pull/out/nwis_dv_data.rds.ind',
+      uv_ind = '2_nwis_pull/out/nwis_uv_data.rds.ind',
+      min_value, max_value,
       out_ind = target_name)
-   
-  5_data_munge/out/nwis_uv_daily.rds:
-    command: gd_get('5_data_munge/out/nwis_uv_daily.rds.ind')
-    
-  # NWIS dv data #
-  5_data_munge/out/nwis_dv_daily.rds.ind:
-    command: munge_nwis_dv(
-      in_ind = '2_nwis_pull/out/nwis_dv_data.rds.ind',
-      min_value, max_value, max_daily_range, 
-      out_ind = target_name)
-   
-  5_data_munge/out/nwis_dv_daily.rds:
-    command: gd_get('5_data_munge/out/nwis_dv_daily.rds.ind')
     
   # EcoSHEDS data
   5_data_munge/out/ecosheds_munged.rds.ind:
     command: munge_ecosheds(
       in_ind = '4_other_sources/out/ecosheds_data.rds.ind',
+      min_value, max_value,
       out_ind = target_name)
     
   # bring it all together
   5_data_munge/out/daily_temperatures.rds.ind:
     command: combine_all_dat(
-      nwis_dv_ind  = '5_data_munge/out/nwis_dv_daily.rds.ind',
-      nwis_uv_ind = '5_data_munge/out/nwis_uv_daily.rds.ind',
+      nwis_ind  = '5_data_munge/out/nwis_daily.rds.ind',
       wqp_ind = '5_data_munge/out/wqp_daily_nodepths.rds.ind',
       ecosheds_ind = '5_data_munge/out/ecosheds_munged.rds.ind',
       out_ind = target_name)
-      
-  5_data_munge/out/daily_temperatures.rds:
-    command: gd_get('5_data_munge/out/daily_temperatures.rds.ind')
-    
+
   5_data_munge/out/all_sites.rds.ind:
     command: combine_all_sites(
       out_ind = target_name,
       nwis_dv_sites_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind',
       nwis_uv_sites_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind',
-      ecosheds_sites_ind = '4_other_sources/out/ecosheds_sites_ind',
+      ecosheds_sites_ind = '4_other_sources/out/ecosheds_sites.rds.ind',
       wqp_sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind')
       
-  5_data_munge/out/all_sites.rds:
-    command: gd_get('5_data_munge/out/all_sites.rds.ind')
+  5_data_munge/out/daily_temperatures_summary.csv:
+    command: summarize_all_dat(
+      in_ind = '5_data_munge/out/daily_temperatures.rds.ind',
+      out_file = target_name)
