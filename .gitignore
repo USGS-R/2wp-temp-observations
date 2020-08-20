@@ -10,6 +10,7 @@
 *.Feather
 *.Rdata
 .httr-oauth
+*.zip
 
 # remake
 .remake/

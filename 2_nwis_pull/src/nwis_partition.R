@@ -1,6 +1,6 @@
-partition_inventory <- function(inventory_ind, nwis_pull_size, partitions_ind) {
+partition_inventory <- function(inventory_ind, nwis_pull_size, site_types, partitions_ind, pull_date) {
   
-  inventory <- feather::read_feather(scipiper::sc_retrieve(inventory_ind,remake_file = '2_nwis_pull.yml'))
+  inventory <- feather::read_feather(scipiper::sc_retrieve(inventory_ind, remake_file = 'getters.yml'))
   
   # uv data count number is the number of days between the min and max observation days
   # assume that each day has 15 minute data, which is 96 obs/day
@@ -12,6 +12,7 @@ partition_inventory <- function(inventory_ind, nwis_pull_size, partitions_ind) {
   # first, get rid of duplicate sites from whatNWISdata call
   # do not need to pull sites twice
   atomic_groups <- inventory %>%
+    filter(site_tp_cd %in% site_types) %>%
     group_by(site_no) %>%
     slice(which.max(count_nu)) %>%
     ungroup() %>%
@@ -45,13 +46,10 @@ partition_inventory <- function(inventory_ind, nwis_pull_size, partitions_ind) {
   # Prepare one data_frame containing info about each site, including
   # the pull, constituent, and task name (where task name will become the core
   # of the filename)
-  pull_time <- Sys.time()
-  attr(pull_time, 'tzone') <- 'UTC'
-  pull_id <- format(pull_time, '%y%m%d%H%M%S')
 
   partitions <- atomic_groups %>%
-    mutate(PullDate = pull_time,
-           PullTask = sprintf('%s_%03d', pull_id, assignments)) %>%
+    mutate(PullDate = pull_date,
+           PullTask = sprintf('%s_%03d', pull_date, assignments)) %>%
     select(site_no, count_nu, PullTask, PullDate)
   
   feather::write_feather(partitions, as_data_file(partitions_ind))

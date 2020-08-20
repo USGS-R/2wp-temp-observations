@@ -14,7 +14,7 @@ get_wqp_sites <- function(site_ind, wqp_params) {
 }
 
 subset_sites <- function(in_ind, out_ind) {
-  sites <- feather::read_feather(sc_retrieve(in_ind)) %>%
+  sites <- feather::read_feather(sc_retrieve(in_ind, 'getters.yml')) %>%
     slice(1:100)
   
   feather::write_feather(sites, as_data_file(out_ind))

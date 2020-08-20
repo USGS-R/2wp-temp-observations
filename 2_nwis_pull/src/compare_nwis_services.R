@@ -1,8 +1,8 @@
 # compare NWIS dv and uv services
 
 compare_services <- function(dv_ind, uv_ind, compare_ind) {
-  uv <- feather::read_feather(sc_retrieve(uv_ind))
-  dv <- feather::read_feather(sc_retrieve(dv_ind))
+  uv <- feather::read_feather(sc_retrieve(uv_ind, remake_file = 'getters.yml'))
+  dv <- feather::read_feather(sc_retrieve(dv_ind, remake_file = 'getters.yml'))
   
   uv <- uv %>%
     select(site_no, uv_begin_date = begin_date, uv_end_date = end_date, uv_count = count_nu) %>%
@@ -23,8 +23,8 @@ compare_services <- function(dv_ind, uv_ind, compare_ind) {
 }
 
 reduce_redundancy <- function(uv_inv_ind, compare_ind, out_ind) {
-  compare <- feather::read_feather(sc_retrieve(compare_ind))
-  uv_inv <- feather::read_feather(sc_retrieve(uv_inv_ind))
+  compare <- feather::read_feather(sc_retrieve(compare_ind, remake_file = 'getters.yml'))
+  uv_inv <- feather::read_feather(sc_retrieve(uv_inv_ind, remake_file = 'getters.yml'))
   
   uv_pull_sites <- filter(compare, is.na(dv_begin_date)) %>%
     select(site_no) %>%

@@ -9,7 +9,7 @@ plan_nwis_pull <- function(partitions_ind, service) {
     out='2_nwis_pull/out',
     log='2_nwis_pull/log')
   
-  partitions <- feather::read_feather(scipiper::sc_retrieve(partitions_ind))
+  partitions <- feather::read_feather(scipiper::sc_retrieve(partitions_ind, remake_file = 'getters.yml'))
 
   # after all wanted data have been pulled, this function will be called but
   # doesn't need to create anything much, so just return NULL
@@ -75,7 +75,6 @@ combine_nwis_data <- function(ind_file, ...){
   rds_files <- c(...)
   df_list <- list()
 
-
   for (i in seq_len(length(rds_files))){
   
     temp_dat <- readRDS(rds_files[i]) 
@@ -99,7 +98,7 @@ combine_nwis_data <- function(ind_file, ...){
 # PullTask 
 filter_partitions <- function(partitions_ind, pull_task) {
   
-  partitions <- feather::read_feather(sc_retrieve(partitions_ind))
+  partitions <- feather::read_feather(sc_retrieve(partitions_ind, remake_file = 'getters.yml'))
 
   these_partitions <- dplyr::filter(partitions, PullTask==pull_task, count_nu > 0)
   
@@ -109,15 +108,24 @@ filter_partitions <- function(partitions_ind, pull_task) {
 # pull a batch of NWIS observations, save locally, return .tind file
 get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbose = TRUE) {
 
-  nwis_pull_params$service <- service
+  #nwis_pull_params$service <- service
   nwis_pull_params$site <- partition$site_no
 
-  if (service == 'dv') { nwis_pull_params$statCd <- '00003' }
+  if (service == 'dv') { 
+    nwis_pull_params$statCd <- '00003' 
+    
+    # do the data pull
+    nwis_dat_time <- system.time({
+      nwis_dat <- do.call(readNWISdv, nwis_pull_params)
+    })
+  }
   
-  # do the data pull
-  nwis_dat_time <- system.time({
-    nwis_dat <- do.call(readNWISdata, nwis_pull_params)
-  })
+  if (service == 'uv') { 
+    # do the data pull
+    nwis_dat_time <- system.time({
+      nwis_dat <- do.call(readNWISuv, nwis_pull_params)
+    })
+  }
   
   if (verbose){
     message(sprintf(
@@ -126,6 +134,7 @@ get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbo
       nwis_dat_time['elapsed'],
       nrow(nwis_dat)))
   }
+
   # make nwis_dat a tibble, converting either from data.frame (the usual case) or
   # NULL (if there are no results)
   nwis_dat <- as_data_frame(nwis_dat)
@@ -138,32 +147,43 @@ get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbo
 
 choose_temp_column <- function(temp_dat) {
   # take all temperature columns and put into long df
+  date_col <- grep('date', names(temp_dat), ignore.case = TRUE, value = TRUE)
+  
   values <- temp_dat %>%
     select(-ends_with('_cd'), -agency_cd) %>%
-    tidyr::gather(key = 'col_name', value = 'temp_value', -site_no, -dateTime) %>%
-    filter(!is.na(temp_value))
+    tidyr::gather(key = 'col_name', value = 'temp_value', -site_no, -contains('date', ignore.case = TRUE)) %>%
+    filter(!is.na(temp_value)) %>%
+    mutate(Date = as.Date(.data[[date_col]])) %>%
+    group_by(site_no, Date, col_name) %>%
+    summarize(temp_value = round(mean(temp_value), 2), n = n()) %>% ungroup()
   
   # take all temperature cd columns and do the same thing
   codes <- temp_dat %>%
-    select(site_no, dateTime, ends_with('_cd'), -tz_cd, -agency_cd) %>%
-    tidyr::gather(key = 'col_name', value = 'cd_value', -site_no, -dateTime) %>%
+    select(site_no, contains('date', ignore.case = TRUE), ends_with('_cd'), -contains('agency'), -contains('tz')) %>%
+    tidyr::gather(key = 'col_name', value = 'cd_value', -site_no, -contains('date', ignore.case = TRUE)) %>%
     mutate(col_name = gsub('_cd', '', col_name)) %>%
-    filter(!is.na(cd_value))
+    filter(!is.na(cd_value)) %>%
+    mutate(Date = as.Date(.data[[date_col]])) %>%
+    group_by(site_no, Date, col_name) %>%
+    summarize(cd_value = paste0(unique(cd_value))) %>% ungroup()
   
   # bring together so I have a long df with both temp and cd values
-  all_dat <- left_join(values, codes, by = c('site_no', 'dateTime', 'col_name'))
+  all_dat <- left_join(values, codes, by = c('site_no', 'Date', 'col_name'))
   
   # find which col_name has the most records for each site,
   # and keep that column
-  top_cols <- all_dat %>%
+  
+  # finds the number of records per site across the whole dataset
+  # In instances where there are more than one site per date, the 
+  # the site with the most overall values is chosen.
+  fixed_dups <- all_dat %>%
     group_by(site_no, col_name) %>%
-    summarize(count_nu = n()) %>%
-    group_by(site_no) %>%
-    slice(which.max(count_nu))
+    mutate(count_nu = n()) %>%
+    ungroup() %>%
+    group_by(site_no, Date) %>%
+    slice(which.max(count_nu)) %>%
+    ungroup() %>%
+    select(site_no, Date, col_name, temp_value, cd_value, n)
   
-  # reduce the data down to those site-top col combos
-  reduced_dat <- inner_join(all_dat, select(top_cols, site_no, col_name)) %>%
-    distinct()
-  
-  return(reduced_dat)
+  return(fixed_dups)
 }

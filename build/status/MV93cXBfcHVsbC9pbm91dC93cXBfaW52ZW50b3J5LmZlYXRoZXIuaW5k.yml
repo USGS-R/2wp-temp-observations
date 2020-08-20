@@ -1,12 +1,15 @@
 version: 0.3.0
 name: 1_wqp_pull/inout/wqp_inventory.feather.ind
 type: file
-hash: 2d5819a1baaa089f245b7738718a8d12
-time: 2019-12-31 15:31:54 UTC
+hash: fadf3bf3c179f5b48e58503abe0e12ad
+time: 2020-07-24 16:15:13 UTC
 depends:
+  states: d4388335fca613f24b5704d2ddb6fe7d
+  1_wqp_pull/src/wqp_inventory.R: 74cfef5ffeee0d59b5bbdf3e3e29784d
+  wqp_pull_date: 1fbc5fcb5a023a50317972d9e65e1d54
   wqp_pull_parameters: 61e80f749c74948bf95bb67cb07412b0
-fixed: 771195029a2667a2a7b9465306769095
+fixed: c3ee76dc2cb8a1c193cd056c6e0cfba9
 code:
   functions:
-    inventory_wqp: 2c1d993a23e7f8033dfb5d684d093022
+    do_inventory_tasks: c14f5e6df050eb497c57849efb9a1b95
 
