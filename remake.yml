@@ -15,4 +15,5 @@ targets:
       - 2_nwis_pull
       - 5_data_munge
       - 4_other_sources
+      - 6_all_plots
 

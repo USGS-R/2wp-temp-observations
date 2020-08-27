@@ -1,14 +1,16 @@
-get_site_flowlines <- function(outind, reaches_direction_ind, sites, search_radius) {
+get_site_flowlines <- function(outind, reaches_direction_ind, sites_ind, search_radius) {
 
   reaches_direction <- readRDS(sc_retrieve(reaches_direction_ind, 
-                                   remake_file = "6_network.yml"))  
+                                   remake_file = "6_network.yml"))
+  # sites <- readRDS(sc_retrieve(sites_ind, 
+  #                                  remake_file = "5_data_munge.yml"))
+  reaches_direction <- readRDS(as_data_file(sites_ind))
   #set up NHDPlus fields used by get_flowline_index
   reaches_nhd_fields <- reaches_direction %>% 
     select(COMID = seg_id, Shape) %>% 
     mutate(REACHCODE = COMID, ToMeas = 100, FromMeas = 100) %>% 
     st_as_sf()
 
-  sites <- readRDS(sites) #replace when connecting to rest of pipeline
   sites_sf <- sites %>% rowwise() %>%  
     filter(across(c(longitude, latitude), ~ !is.na(.x))) %>% 
     mutate(Shape = list(st_point(c(longitude, latitude), dim = "XY"))) %>% 
@@ -83,10 +85,9 @@ check_upstream_reach <- function(matched_seg_id, down_up_ratio, reaches_directio
   }
 }
 
-sample_reaches <- function(matched_sites_ind) {
+sample_reaches <- function(matched_sites_ind, full_network) {
   #TODO: add stream order from NHD
-  matched_sites <- readRDS(sc_retrieve(matched_sites_ind, remake_file = "6_network.yml")) %>% 
-    ungroup()
+  matched_sites <- readRDS(sc_retrieve(matched_sites_ind))
   random_site_reaches_seg_ids <- matched_sites %>% select(seg_id_reassign) %>% 
     distinct() %>% slice_sample(n = 100) %>% pull(seg_id_reassign)
   random_site_reaches <- matched_sites %>% filter(seg_id_reassign %in% random_site_reaches_seg_ids)
@@ -98,14 +99,34 @@ sample_reaches <- function(matched_sites_ind) {
     slice_max(order_by = n_sites, n = 20) %>% 
     pull(seg_id_reassign)
   most_sites_reaches <- matched_sites %>% filter(seg_id_reassign %in% most_sites_reaches_seg_ids)
+  
+  order_one_reach_ids <- get_first_order_reaches(matched_sites, full_network = full_network) %>% 
+    sample(size = 20)
+  order_one_reaches <- matched_sites %>% filter(seg_id_reassign %in% order_one_reach_ids)
+  
   reaches_list <- list(random_site_reaches = random_site_reaches,
                        longest_reaches = longest_reaches,
                        shortest_reaches = shortest_reaches,
-                       most_sites_reaches = most_sites_reaches)
+                       most_sites_reaches = most_sites_reaches,
+                       order_one_reaches = order_one_reaches)
   return(reaches_list)
 }
 
 transform_network_file <- function(network_ind, crs) {
   network <- readRDS(sc_retrieve(network_ind))
   network$Shape <- st_transform(network$Shape, crs)
+  return(network)
+}
+
+#' @param reaches has seg_id column, of segments with matched reaches
+#' @param full_network has seg_id and to_seg columns of full network
+#' The geofabric doesn't have a stream order field, but we can find the first order 
+#' reaches just by finding which reaches are missing from the to_seg column
+get_first_order_reaches <- function(reaches, full_network) {
+  network_first_order_reaches <- full_network %>% 
+    filter(!seg_id %in% to_seg) %>% 
+    pull(seg_id)
+  reaches %>% filter(seg_id %in% network_first_order_reaches) %>% 
+    distinct() %>% 
+    pull(seg_id)
 }

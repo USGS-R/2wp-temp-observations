@@ -1,4 +1,4 @@
-make_site_reach_plots <- function(outind, reaches_to_check, category, ...) {
+make_site_reach_plots <- function(outind, reaches_to_check, network_latlon, category, ...) {
   reaches_to_check_category <- reaches_to_check[[category]]
   
   task_names <- as.character(unique(reaches_to_check_category$seg_id_reassign))
