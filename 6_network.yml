@@ -25,6 +25,7 @@ targets:
        - 6_network/out/longest_reaches_plots.zip.ind
        - 6_network/out/shortest_reaches_plots.zip.ind
        - 6_network/out/random_site_reaches_plots.zip.ind
+       - 6_network/out/order_one_reaches_plots.zip.ind
        - 6_network/out/site_reach_distances.png.ind
        - 6_network/out/sites_per_reach.png.ind
        - 6_network/out/site_distance_vs_reach_length.png.ind
