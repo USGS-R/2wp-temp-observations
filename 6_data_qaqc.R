@@ -18,23 +18,19 @@ sites_dat <- readRDS("5_data_munge/out/all_sites.rds") %>%
   filter(!is.na(latitude)) %>%
   mutate(bins_lat = cut(latitude,  breaks = seq(from = floor(min(latitude)), 
                                                 to = ceiling(max(latitude)), 
-                                                by = 5)))
-# pulling the site_id and latitude bins from the data
-latit_sit_id <- sites_dat %>% select(site_id, bins_lat)
+                                                by = 5))) 
+  # pulling the site_id and latitude bins from the data
+latit_sit_id <- sites_dat %>% select(site_id, bins_lat) %>% distinct()
 
 # selecting a random sample from the daily temps data.
 daily_dat_subset <- daily_dat %>%
   filter(!is.na(date)) %>%
   slice_sample(n = 500000, replace = FALSE) 
 
-#left join the bins to the daily temp data subset.
-#daily_latit_subset <- left_join(daily_dat_subset, latit_sit_id) %>%
- # group_by(bins_lat, month = lubridate::month(date))
-
 # to find summary and distribution of the subset data.
-summary(daily_latit_subset)
-hist(daily_latit_subset$temp_degC, prob=TRUE, col="grey")
-lines(density(daily_latit_subset$temp_degC), col="blue")
+summary(daily_dat_subset)
+hist(daily_dat_subset$temp_degC, prob=TRUE, col="grey")
+lines(density(daily_dat_subset$temp_degC), col="blue")
 
 # finding the mean and std of the subset
 mean_daily_lat <- mean(daily_dat_subset$temp_degC)
@@ -49,9 +45,14 @@ percent_5_95 <- quantile(daily_latit_subset$temp_degC, c(0.05, 0.95))
 #left join the bins to the daily temp data subset.
 # adding the flag column to detect for any temperature in the critical region. 
 # critical region is the tail region, pass the cut-off values.
-daily_latit_subset <- daily_latit_subset %>%
-  left_join(daily_dat_subset, latit_sit_id) %>%
+daily_latit_subset <- left_join(daily_dat_subset, latit_sit_id) %>%
   group_by(bins_lat, month = lubridate::month(date))%>%
+    temp_mean = mean(.data [[temp_degC]])  %>%
+         outlier_cut_off = 2 * sd(.data[[temp_degC]]) %>%
+      mutate(low_bound = temp_mean - outlier_cut_off,
+             up_bound = temp_mean + outlier_cut_off)
+  #ungrouped 
+  
   mutate(flag = ifelse(temp_degC <= low_bound | temp_degC >= up_bound,
                        "o", NA)) 
 # summarizing the number of flagged temps observations. 
@@ -60,7 +61,8 @@ daily_latit_flags <- daily_latit_subset %>%
             flag)
 
 # creating subset of flagged temps observation. 
-
+falged_obs <- daily_latit_subset %>% 
+  selec(flag == 'o', ) %>% unique(seg_id)
 
 #finding the missing data in the date column
 mis_dat <- daily_dat %>%
