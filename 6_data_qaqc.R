@@ -1,5 +1,6 @@
 library(scipiper)
 library(dplyr)
+library(tidyverse)
 set.seed(10)
 #getting the data from google drive and changing the file to RDS file without ind
 gd_get("5_data_munge/out/daily_temperatures.rds.ind")
@@ -32,37 +33,47 @@ summary(daily_dat_subset)
 hist(daily_dat_subset$temp_degC, prob=TRUE, col="grey")
 lines(density(daily_dat_subset$temp_degC), col="blue")
 
-# finding the mean and std of the subset
-mean_daily_lat <- mean(daily_dat_subset$temp_degC)
-std_daily_lat <- sd(daily_dat_subset$temp_degC)
-# setting cut off limits for outliers 
-outlier_cut_off <- 2 * std_daily_lat
-low_bound <- mean_daily_lat - outlier_cut_off
-up_bound <- mean_daily_lat + outlier_cut_off
-# compare 2 *std from the mean to percentiles:
-percent_5_95 <- quantile(daily_latit_subset$temp_degC, c(0.05, 0.95)) 
-
 #left join the bins to the daily temp data subset.
 # adding the flag column to detect for any temperature in the critical region. 
 # critical region is the tail region, pass the cut-off values.
 daily_latit_subset <- left_join(daily_dat_subset, latit_sit_id) %>%
   group_by(bins_lat, month = lubridate::month(date))%>%
-    temp_mean = mean(.data [[temp_degC]])  %>%
-         outlier_cut_off = 2 * sd(.data[[temp_degC]]) %>%
-      mutate(low_bound = temp_mean - outlier_cut_off,
-             up_bound = temp_mean + outlier_cut_off)
-  #ungrouped 
-  
+  # finding the mean and  setting cut off limits for outliers
+  mutate(temp_mean = mean(temp_degC),  
+         outlier_cut_off = 2 * sd(temp_degC),
+         low_bound = temp_mean - outlier_cut_off,
+         up_bound = temp_mean + outlier_cut_off) %>%
+  ungroup() %>%
   mutate(flag = ifelse(temp_degC <= low_bound | temp_degC >= up_bound,
                        "o", NA)) 
-# summarizing the number of flagged temps observations. 
-daily_latit_flags <- daily_latit_subset %>%
-  summarize(n_obse = n(),
-            flag)
 
+# creating plot to see how is outlier detection is preforming. 
+# 1) creating subset of flagged temps observation. 
+flaged_obs <- daily_latit_subset %>% 
+  filter(flag == 'o') 
+
+sites <- unique(flaged_obs$site_id)
+ 
+for (temp_site in sites) {
+  temp_dat <- flaged_obs %>%
+    (date = as.Date(date)) %>%
+    filter(site_id %in% temp_site) 
+p <- ggplot(flaged_obs, aes(x = month, y = date)) +
+  geom_point() +
+  theme_bw() 
+  #cowplot::theme_cowplot() +
+  #ggtitle(paste0("Timeseries to Detect Outlier: ", temp_site)) 
+  #facet_wrap(~ flag)
+print(p)
+}
+# summarizing the number of flagged temps observations. 
 # creating subset of flagged temps observation. 
-falged_obs <- daily_latit_subset %>% 
-  selec(flag == 'o', ) %>% unique(seg_id)
+#falged_obs <- daily_latit_subset %>% 
+ # length(which(flag == 'o'))
+#  select(flag == 'o', ) %>% unique(seg_id)
+
+
+
 
 #finding the missing data in the date column
 mis_dat <- daily_dat %>%
