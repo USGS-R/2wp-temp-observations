@@ -47,12 +47,23 @@ daily_latit_subset <- left_join(daily_dat_subset, latit_sit_id) %>%
   mutate(flag = ifelse(temp_degC <= low_bound | temp_degC >= up_bound,
                        "o", NA)) 
 
+
 # creating plot to see how is outlier detection is preforming. 
 # 1) creating subset of flagged temps observation. 
 flaged_obs <- daily_latit_subset %>% 
   filter(flag == 'o') 
-
 sites <- unique(flaged_obs$site_id)
+
+# Finding the site and year most outliers observation from the daily_latitude subset
+max_sit_year <- flaged_obs %>%
+  mutate(year = lubridate::year(date)) %>%
+  group_by(site_id, year ) %>%
+  summarize(n_obs = n())
+# to find the 3 maximum of the stie-date subset
+max_3_obs <-  max_sit_year %>%
+  top_n(n =4)
+
+
  
 for (temp_site in sites) {
   temp_dat <- flaged_obs %>%
