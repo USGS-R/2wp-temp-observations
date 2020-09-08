@@ -84,8 +84,8 @@ for (temp_site in max_3_obs$site_id) {
   temp_dat <- daily_latit_subset %>%
     group_by(site_id) %>%
     #filter(!is.na(flag)) %>%
-    filter(site_id %in% temp_site) 
-    #filter(lubridate::year(date) %in% temp_year) 
+    filter(site_id %in% temp_site)  %>%
+    filter(lubridate::year(date) %in% temp_year) 
 p <- ggplot(temp_dat, aes(x = date, y = temp_degC, colour = flag)) +
   geom_point() +
   theme_bw() +
@@ -93,7 +93,7 @@ p <- ggplot(temp_dat, aes(x = date, y = temp_degC, colour = flag)) +
   #scale_y_continuous(limits = c (0, 30), breaks = c(5, 10, 15, 20, 25, 30)) +
   ggtitle(paste0("Timeseries to Detect Outlier: ", temp_site)) 
   #facet_wrap(~ flag)
-temp_out <- paste0("6_QAQC/out/", 'Timeseries_outlier_', temp_seg, '.png')
+temp_out <- paste0("6_QAQC/out/", 'Timeseries_outlier_', temp_site, '.png')
 ggsave(temp_out, p, height = 7.5)
 }
 
