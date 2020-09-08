@@ -21,12 +21,13 @@ sites_dat <- readRDS("5_data_munge/out/all_sites.rds") %>%
   mutate(bins_lat = cut(latitude,  breaks = seq(from = floor(min(latitude)), 
                                                 to = ceiling(max(latitude)), 
                                                 by = 5))) 
-  # pulling the site_id and latitude bins from the data
+# pulling the site_id and latitude bins from the data
 latit_sit_id <- sites_dat %>% select(site_id, bins_lat) %>% distinct()
 
 sites <- unique(daily_dat$site_id) # selecting unique site_id
 site_sub <- sample(sites, 5000)  # selecting sample/subset of sites
-# selecting a random sample from the daily temps data.
+# selecting a random sample from the daily temps data. 
+# filtering to the sites samples selected above after removing NA. 
 daily_dat_subset <- daily_dat %>%
   filter(!is.na(date)) %>%
   filter(site_id %in% site_sub) # to select a random subset from daily-temp data
@@ -43,7 +44,7 @@ daily_latit_subset <- left_join(daily_dat_subset, latit_sit_id) %>%
   group_by(bins_lat, month = lubridate::month(date))%>%
   # finding the mean and  setting cut off limits for outliers
   mutate(temp_mean = mean(temp_degC),  
-         outlier_cut_off = 2 * sd(temp_degC),
+         outlier_cut_off = 3 * sd(temp_degC),
          low_bound = temp_mean - outlier_cut_off,
          up_bound = temp_mean + outlier_cut_off) %>%
   ungroup() %>%
@@ -78,19 +79,18 @@ max_year <-  max_year %>%
 
 temp_year = max_year$year
 
-plot_color = c('black', 'red1')
- # Looping throgh the sites to plot 
+ # Looping through the sites to plot 
 for (temp_site in max_3_obs$site_id) {
   temp_dat <- daily_latit_subset %>%
     group_by(site_id) %>%
     #filter(!is.na(flag)) %>%
-    filter(site_id %in% temp_site) %>%
-    filter(lubridate::year(date) %in% temp_year) 
+    filter(site_id %in% temp_site) 
+    #filter(lubridate::year(date) %in% temp_year) 
 p <- ggplot(temp_dat, aes(x = date, y = temp_degC, colour = flag)) +
-  geom_point(size = 1) +
+  geom_point() +
   theme_bw() +
   cowplot::theme_cowplot() +
-  #scale_color_manual(values = plot_color)
+  #scale_y_continuous(limits = c (0, 30), breaks = c(5, 10, 15, 20, 25, 30)) +
   ggtitle(paste0("Timeseries to Detect Outlier: ", temp_site)) 
   #facet_wrap(~ flag)
 print(p)
