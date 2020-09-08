@@ -93,7 +93,8 @@ p <- ggplot(temp_dat, aes(x = date, y = temp_degC, colour = flag)) +
   #scale_y_continuous(limits = c (0, 30), breaks = c(5, 10, 15, 20, 25, 30)) +
   ggtitle(paste0("Timeseries to Detect Outlier: ", temp_site)) 
   #facet_wrap(~ flag)
-print(p)
+temp_out <- paste0("6_QAQC/out/", 'Timeseries_outlier_', temp_seg, '.png')
+ggsave(temp_out, p, height = 7.5)
 }
 
 # needed to find the reason for date = NA
