@@ -49,7 +49,7 @@ daily_latit_subset <- left_join(daily_dat_subset, latit_sit_id) %>%
          up_bound = temp_mean + outlier_cut_off) %>%
   ungroup() %>%
   mutate(flag = ifelse(temp_degC <= low_bound | temp_degC >= up_bound,
-                       "o", NA)) 
+                       "o", NA))
 
 # creating plot to see how is outlier detection is preforming. 
 # 1) creating subset of flagged temps observation. 
@@ -73,11 +73,44 @@ max_year <- flaged_obs %>%
   group_by(site_id, year) %>%
   summarize(n_obs = n())
 # to find the 3 maximum of the site-date subset
-max_year <-  max_year %>%
+max_3_year <-  max_year %>%
   ungroup() %>%
   slice_max(n_obs, n = 3)
 
 temp_year = max_year$year
+
+#finding the flagged data for the whole daily temps data
+daily_latit_whole <- left_join(daily_dat, latit_sit_id) %>%
+  group_by(bins_lat, month = lubridate::month(date))%>%
+  # finding the mean and  setting cut off limits for outliers
+  mutate(temp_mean = mean(temp_degC),  
+         outlier_cut_off = 3 * sd(temp_degC),
+         low_bound = temp_mean - outlier_cut_off,
+         up_bound = temp_mean + outlier_cut_off) %>%
+  ungroup() %>%
+  mutate(flag = ifelse(temp_degC <= low_bound | temp_degC >= up_bound,
+                       "o", NA)) 
+# finding a flagged subset of the whole daily temps
+flaged_whole <- daily_latit_whole %>%
+  filter(flag == 'o')
+
+max_sit_whole <- flaged_whole %>%
+  group_by(site_id) %>%
+  summarize(n_obs = n())
+
+max_3_whole <-  max_sit_whole %>%
+  ungroup() %>%
+  slice_max(n_obs, n = 3)
+
+#finding th years with max obs
+max_year_whole <- flaged_whole %>%
+  mutate(year = lubridate::year(date)) %>%
+  group_by(site_id, year) %>%
+  summarize(n_obs = n())
+# to find the 3 maximum of the site-date subset
+max_3_year_whole <-  max_year_whole %>%
+  ungroup() %>%
+  slice_max(n_obs, n = 3)
 
  # Looping through the sites to plot 
 for (temp_site in max_3_obs$site_id) {
