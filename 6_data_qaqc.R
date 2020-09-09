@@ -1,5 +1,6 @@
 library(scipiper)
 library(dplyr)
+library(plotly)
 library(tidyverse)
 set.seed(10)
 
@@ -23,6 +24,138 @@ sites_dat <- readRDS("5_data_munge/out/all_sites.rds") %>%
                                                 by = 5))) 
 # pulling the site_id and latitude bins from the data
 latit_sit_id <- sites_dat %>% select(site_id, bins_lat) %>% distinct()
+
+sites <- unique(daily_dat$site_id) # selecting unique site_id
+
+#finding the flagged data for the whole daily temps data
+daily_latit_whole <- left_join(daily_dat, latit_sit_id) %>%
+  group_by(bins_lat, month = lubridate::month(date))%>%
+  # finding the mean and  setting cut off limits for outliers
+  mutate(temp_mean = mean(temp_degC),  
+         outlier_cut_off = 3 * sd(temp_degC),
+         low_bound = temp_mean - outlier_cut_off,
+         up_bound = temp_mean + outlier_cut_off) %>%
+  ungroup() %>%
+  mutate(flag = ifelse(temp_degC <= low_bound | temp_degC >= up_bound,
+                       "o", NA)) 
+hist(daily_latit_whole$temp_degC, prob = TRUE, col = "grey")
+lines(density(daily_latit_whole$temp_degC), col = "blue")
+
+# creating bins and threshold data
+daily_lat_thres_dat <- left_join(daily_dat, latit_sit_id)  %>%
+  group_by(bins_lat, month = lubridate::month(date))%>%
+  summarize(temp_mean = mean(temp_degC),  
+            outlier_cut_off = 2.5 * sd(temp_degC),
+            low_bound = mean(temp_degC) - outlier_cut_off,
+            up_bound = mean(temp_degC) + outlier_cut_off) 
+  ungroup()
+  
+# finding a flagged subset of the whole daily temps
+flaged_whole <- daily_latit_whole %>%
+  filter(flag == 'o') 
+  ##group_by(site_id, month) 
+
+
+#finding th years with max obs
+sites <- unique(daily_latit_whole$site_id)
+
+max_site_year_whole <- flaged_whole %>%
+  filter(site_id %in% sites) %>%
+  mutate(year = lubridate::year(date)) %>%
+  group_by(site_id, year) %>%
+  summarize(n_obs = n())
+# to find the 3 maximum of the site-date subset
+site_year_w_outlier <-  max_site_year_whole %>%
+  ungroup() %>%
+  slice_max(n_obs, n = 15)
+
+for (temp_bins in bins) {
+  bin_dat <- daily_latit_whole %>%
+    group_by(site_id, month) %>%
+    filter(bins_lat %in% temp_bins)
+  
+  p2 <- ggplot(data = bin_dat, aes(x = month, y = low_bound)) +
+    #geom_line(size = 1) +
+    geom_point(data = bin_dat, aes(x = month, y = up_bound),
+               alpha = 0.35, colour = "black", size = 1) +
+    facet_wrap( ~ bins_lat, strip.position = "top", ncol = 1) +
+    theme_bw() +
+    cowplot::theme_cowplot() +
+    ggtitle(paste0("Timeseries Temperature for Segment Id: ", temp_bins)) 
+  print(ggplotly(p2))
+}
+
+examine_site_bins <- flaged_whole %>%
+  filter(bins_lat == bins)
+summary(examine_site)
+plotlist = list()
+
+bins <- unique(daily_latit_whole$bins_lat)
+
+# finding outlier for bins to plot
+max_site_year_whole <- flaged_whole %>%
+  filter(site_id %in% sites) %>%
+  #mutate(year = lubridate::year(date)) %>%
+  group_by(bins_lat) %>%
+  summarize(n_obs = n())
+# to find the 3 maximum of the site-date subset
+site_year_w_outlier <-  max_site_year_whole %>%
+  ungroup() %>%
+  slice_max(n_obs, n = 15)
+
+for (temp_bins in max_site_year_whole$bins_lat) {
+  bin_dat <- daily_latit_whole %>%
+    group_by(site_id, month) %>%
+    filter(bins_lat %in% temp_bins)
+  
+  p2 <- ggplot(data = bin_dat, aes(x = month, y = low_bound)) +
+    #geom_line(size = 1) +
+    geom_point(data = bin_dat, aes(x = month, y = up_bound),
+               alpha = 0.35, colour = "black", size = 1) +
+    facet_wrap( ~ bins_lat, strip.position = "top", ncol = 1) +
+    theme_bw() +
+    cowplot::theme_cowplot() +
+    ggtitle(paste0("Timeseries Temperature for Segment Id: ", temp_bins)) 
+  print(ggplotly(p2))
+}
+
+# Looping through the sites to plot 
+for (i in 1:nrow(site_year_w_outlier)) {
+  temp_dat <- daily_latit_whole %>%
+    filter(site_id %in% site_year_w_outlier$site_id[i]) %>%
+    filter(lubridate::year(date) %in% site_year_w_outlier$year[i])
+  
+  p <- ggplot(temp_dat, aes(x = date, y = temp_degC, colour = flag)) +
+    geom_point(aes(shape = source)) +
+    #geom_line() +
+    theme_bw() +
+    cowplot::theme_cowplot() +
+    #scale_y_continuous(limits = c (0, 30), breaks = c(5, 10, 15, 20, 25, 30)) +
+    ggtitle(paste0("Timeseries to Detect Outlier: ", 
+                   site_year_w_outlier$site_id[i]))     
+    temp_out <- paste0("6_QAQC/out/", 'Timeseries_outlier_',
+                       site_year_w_outlier$site_id[i], '.png')
+    ggsave(temp_out, p, height = 7.5)
+    
+    print(ggplotly(p))
+    plotly::ggplotly(p)
+}
+#for (temp_site in max_3_whole$site_id) {
+#  temp_dat <- daily_latit_whole %>%
+ #   group_by(site_id) %>%
+    #filter(!is.na(flag)) %>%
+  #  filter(site_id %in% temp_site) %>% 
+   # filter(lubridate::year(date) %in% temp_year) 
+#p <- ggplot(temp_dat, aes(x = date, y = temp_degC, colour = flag)) +
+ # geom_point() +
+  #theme_bw() +
+  #cowplot::theme_cowplot() +
+  #scale_y_continuous(limits = c (0, 30), breaks = c(5, 10, 15, 20, 25, 30)) +
+  #ggtitle(paste0("Timeseries to Detect Outlier: ", temp_site)) 
+  #facet_wrap(~ flag)
+#temp_out <- paste0("6_QAQC/out/", 'Timeseries_outlier_', temp_site, '.png')
+#ggsave(temp_out, p, height = 7.5)
+#}
 
 sites <- unique(daily_dat$site_id) # selecting unique site_id
 site_sub <- sample(sites, 5000)  # selecting sample/subset of sites
@@ -78,58 +211,6 @@ max_3_year <-  max_year %>%
   slice_max(n_obs, n = 3)
 
 temp_year = max_year$year
-
-#finding the flagged data for the whole daily temps data
-daily_latit_whole <- left_join(daily_dat, latit_sit_id) %>%
-  group_by(bins_lat, month = lubridate::month(date))%>%
-  # finding the mean and  setting cut off limits for outliers
-  mutate(temp_mean = mean(temp_degC),  
-         outlier_cut_off = 3 * sd(temp_degC),
-         low_bound = temp_mean - outlier_cut_off,
-         up_bound = temp_mean + outlier_cut_off) %>%
-  ungroup() %>%
-  mutate(flag = ifelse(temp_degC <= low_bound | temp_degC >= up_bound,
-                       "o", NA)) 
-# finding a flagged subset of the whole daily temps
-flaged_whole <- daily_latit_whole %>%
-  filter(flag == 'o')
-
-max_sit_whole <- flaged_whole %>%
-  group_by(site_id) %>%
-  summarize(n_obs = n())
-
-max_3_whole <-  max_sit_whole %>%
-  ungroup() %>%
-  slice_max(n_obs, n = 3)
-
-#finding th years with max obs
-max_year_whole <- flaged_whole %>%
-  mutate(year = lubridate::year(date)) %>%
-  group_by(site_id, year) %>%
-  summarize(n_obs = n())
-# to find the 3 maximum of the site-date subset
-max_3_year_whole <-  max_year_whole %>%
-  ungroup() %>%
-  slice_max(n_obs, n = 3)
-
- # Looping through the sites to plot 
-for (temp_site in max_3_obs$site_id) {
-  temp_dat <- daily_latit_subset %>%
-    group_by(site_id) %>%
-    #filter(!is.na(flag)) %>%
-    filter(site_id %in% temp_site)  %>%
-    filter(lubridate::year(date) %in% temp_year) 
-p <- ggplot(temp_dat, aes(x = date, y = temp_degC, colour = flag)) +
-  geom_point() +
-  theme_bw() +
-  cowplot::theme_cowplot() +
-  #scale_y_continuous(limits = c (0, 30), breaks = c(5, 10, 15, 20, 25, 30)) +
-  ggtitle(paste0("Timeseries to Detect Outlier: ", temp_site)) 
-  #facet_wrap(~ flag)
-temp_out <- paste0("6_QAQC/out/", 'Timeseries_outlier_', temp_site, '.png')
-ggsave(temp_out, p, height = 7.5)
-}
-
 # needed to find the reason for date = NA
 # to do so we looked over the source and site_id 
 mis_dat <- daily_dat %>%
