@@ -21,9 +21,13 @@
 # temporary folders
 1_wqp_pull/tmp/*
 
+
 # old folder that stores junk
 old/*
 
 # ignore geodb for national network
 # and delaware shape file
 8_delaware/in/*
+
+#ignore out files
+out/
