@@ -56,8 +56,13 @@ targets:
     
   4_other_sources/out/ecosheds_sites.rds:
     command: gd_get('4_other_sources/out/ecosheds_sites.rds.ind')
+    
+  4_other_sources/out/norwest_raw_temp_data.feather:
+    command: gd_get('4_other_sources/out/norwest_raw_temp_data.feather.ind')
 
-  
+  4_other_sources/out/norwest_raw_site_data.rds:
+    command: gd_get('4_other_sources/out/norwest_raw_site_data.rds.ind')
+    
   ######## 5_data_munge ###########
   5_data_munge/out/wqp_data_streams.rds:
     command: gd_get('5_data_munge/out/wqp_data_streams.rds.ind')
