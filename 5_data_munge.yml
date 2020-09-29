@@ -63,6 +63,11 @@ targets:
       in_ind = '4_other_sources/out/ecosheds_data.rds.ind',
       min_value, max_value,
       out_ind = target_name)
+      
+  5_data_munge/out/norwest_munged.rds.ind:
+    command: munge_norwest(
+      in_ind = '4_other_sources/out/norwest_raw_files.yml',
+      min_value, max_value, out_ind = target_name)
     
   # bring it all together
   5_data_munge/out/daily_temperatures.rds.ind:

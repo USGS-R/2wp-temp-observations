@@ -51,6 +51,59 @@ munge_ecosheds <- function(in_ind, min_value, max_value, out_ind) {
   
 }
 
+munge_norwest <- function(in_ind, min_value, max_value, out_ind) {
+  files <- yaml::read_yaml(in_ind)
+  in_ind <- as_ind_file(names(files)[1])
+  sites_ind <- as_ind_file(names(files)[2])
+  dat <- feather::read_feather(sc_retrieve(in_ind, 'getters.yml'))
+  sites <- readRDS(sc_retrieve(sites_ind, 'getters.yml')) %>%
+    sf::st_drop_geometry() %>%
+    mutate(site_meta = TRUE) %>%
+    select(OBSPRED_ID, Source, UOM, region, site_meta) %>% distinct()
+  dat_out <-  dat %>%
+    mutate(NorWeST_ID = ifelse(is.na(NorWeST_ID), NoRWeST_ID, NorWeST_ID),
+           DailySD = ifelse(is.na(DailySD), DAILYSD, DailySD)) %>%
+    mutate(NorWeST_ID = ifelse(is.na(NorWeST_ID), NorWest_ID, NorWeST_ID)) %>%
+    select(-NoRWeST_ID, -NorWest_ID, -DAILYSD) %>%
+    left_join(sites, by = c('region', 'OBSPRED_ID')) %>%
+    filter(!grepl('nwis', Source, ignore.case = TRUE)) %>% # assume we picked these up in our own NWIS call
+    filter(!is.na(DailyMean)) %>%
+    filter(!is.na(site_meta)) # there were 32 sites from the "OregonCoast" files that did not have metadata
+    
+  # handle units
+  # most have units, but 2.4 million do not
+  # group by site and year, find min, max, range
+  no_units <- filter(dat_out, is.na(UOM)|UOM %in% 'Y') %>%
+    mutate(year = lubridate::year(SampleDate)) %>%
+    group_by(region, NorWeST_ID, year) %>%
+    summarize(min_temp = min(DailyMean),
+              max_temp = max(DailyMean),
+              nobs = n()) %>%
+    mutate(UOM2 = case_when(max_temp < 35 & min_temp < 32 ~ 'deg C', 
+                           min_temp >= 32 & max_temp >=35 ~ 'deg F',
+                           max_temp < 32 ~ 'deg C',
+                           min_temp < 30 ~ 'deg C',
+                           TRUE ~ 'unknown')) %>% 
+    select(region, NorWeST_ID, year, UOM2)
+  
+  dat_out <- left_join(mutate(dat_out, year = lubridate::year(SampleDate)), no_units) %>%
+    mutate(UOM = ifelse(is.na(UOM)|UOM %in% 'Y', UOM2, UOM)) %>%
+    select(-UOM2)
+  
+  # convert units
+  dat_out <- dat_out %>%
+    mutate(DailyMean = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMean, f_to_c(DailyMean)),
+           DailyMin = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMin, f_to_c(DailyMin)),
+           DailyMax = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMax, f_to_c(DailyMax))) %>%
+    filter(DailyMean > 0 & DailyMean < 35)
+           
+  # select columns for output
+  dat_out <- select(dat_out, -DailySD, -DailyRange, -SampleYear, -UOM, -site_meta, -year)
+  
+  # filter out nwis data, assume we got it in our nwis pull 
+  return(distinct(dat_out))
+}
+
 combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
   wqp <- readRDS(sc_retrieve(wqp_ind, remake_file = 'getters.yml')) %>%
     ungroup() %>%
@@ -67,7 +120,7 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
   ecosheds <- readRDS(sc_retrieve(ecosheds_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'ecosheds',
            site_id = as.character(location_id)) %>%
-    select(site_id, temp_degC = mean, n_obs = n, source)
+    select(site_id, date, temp_degC = mean, n_obs = n, source)
   
   all_dat <- bind_rows(wqp, nwis, ecosheds) %>%
     distinct(site_id, date, temp_degC, .keep_all = TRUE)

@@ -110,6 +110,7 @@ fetch_data_files <- function(base_url, files, region, tmp_loc = '4_other_sources
       mutate(SampleDate = as.Date(SampleDate, format = '%m/%d/%Y'))
       
   }
+  dat <- mutate(dat, region = region)
   return(dat)
 }
 
@@ -136,7 +137,8 @@ fetch_site_files <- function(base_url, files, region, tmp_loc = '4_other_sources
     outfile <- 'NorWeST_ObservedTempPoints_NorthCalifCoastalKlamath'
   }
   # read in shape file
-  geo_dat <- sf::st_read(file.path('4_other_sources/tmp', paste0(outfile, '.shp')))
+  geo_dat <- sf::st_read(file.path('4_other_sources/tmp', paste0(outfile, '.shp'))) %>%
+    mutate(region = region)
   
   return(geo_dat)
 }
