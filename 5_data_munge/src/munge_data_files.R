@@ -98,10 +98,12 @@ munge_norwest <- function(in_ind, min_value, max_value, out_ind) {
     filter(DailyMean > 0 & DailyMean < 35)
            
   # select columns for output
-  dat_out <- select(dat_out, -DailySD, -DailyRange, -SampleYear, -UOM, -site_meta, -year)
+  dat_out <- select(dat_out, -DailySD, -DailyRange, -SampleYear, -UOM, -site_meta, -year) %>%
+    distinct()
   
   # filter out nwis data, assume we got it in our nwis pull 
-  return(distinct(dat_out))
+  saveRDS(dat_out, file = as_data_file(out_ind))  
+  gd_put(out_ind)
 }
 
 combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
@@ -122,7 +124,13 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
            site_id = as.character(location_id)) %>%
     select(site_id, date, temp_degC = mean, n_obs = n, source)
   
-  all_dat <- bind_rows(wqp, nwis, ecosheds) %>%
+  browser()
+  norwest <- readRDS(sc_retrieve(norwest_ind), 'getters.yml') %>%
+    mutate(source = 'norwest',
+           site_id = paste(region, OBSPRED_ID, sep = '_')) %>%
+    select(site_id, date = SampleDate, temp_degC = DailyMean, n_obs = Nobs, source)
+  
+  all_dat <- bind_rows(wqp, nwis, ecosheds, norwest) %>%
     distinct(site_id, date, temp_degC, .keep_all = TRUE)
     
   # save
