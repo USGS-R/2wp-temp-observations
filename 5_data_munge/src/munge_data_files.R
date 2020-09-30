@@ -124,7 +124,6 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
            site_id = as.character(location_id)) %>%
     select(site_id, date, temp_degC = mean, n_obs = n, source)
 
-  browser()
   norwest <- readRDS(sc_retrieve(norwest_ind), 'getters.yml') %>%
     mutate(source = 'norwest',
            site_id = paste(region, OBSPRED_ID, sep = '_')) %>%
@@ -141,6 +140,16 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
 }
 
 combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_ind, ecosheds_sites_ind, out_ind){
+  norwest_sites <- readRDS(sc_retrieve(as_ind_file(names(yaml::read_yaml(norwest_sites_ind))[2]), 'getters.yml')) %>%
+    mutate(source = 'norwest',
+           original_source = Source,
+           site_id = paste(region, OBSPRED_ID, sep = '_'),
+           site_type = 'ST') %>%
+    st_transform(crs = "+proj=longlat +datum=WGS84") %>%
+    mutate(longitude = st_coordinates(.)[,1],
+           latitude = st_coordinates(.)[,2]) %>%
+    select(site_id, site_type, latitude, longitude, source, original_source) %>%
+    st_drop_geometry()
 
   nwis_sites <- feather::read_feather(sc_retrieve(nwis_dv_sites_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'nwis_dv') %>%
@@ -159,7 +168,7 @@ combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_in
            site_id = as.character(location_id)) %>%
     select(site_id, latitude, longitude, site_type, source)
 
-  all_sites <- bind_rows(nwis_sites, wqp_sites, ecosheds_sites)
+  all_sites <- bind_rows(nwis_sites, wqp_sites, ecosheds_sites, norwest_sites)
 
   saveRDS(all_sites, as_data_file(out_ind))
   gd_put(out_ind)
