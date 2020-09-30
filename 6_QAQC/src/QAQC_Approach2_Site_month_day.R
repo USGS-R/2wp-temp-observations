@@ -23,7 +23,7 @@ latit_sit_id <- sites_dat %>% select(site_id, bins_lat) %>% distinct()
 #group by site_ud, source, month, day.
 # cut off line 5 C from mean.
 sites_source_particular_day <- left_join(daily_dat, latit_sit_id) %>%
-  group_by(site_id, source, lubridate::yday(date))%>%
+  group_by(site_id, source, month = lubridate::month(date), day_of_month = lubridate::day(date))%>%
   mutate(temp_mean = mean(temp_degC), 
          temp_std = sd(temp_degC),
          outlier_cut_off = ifelse(is.na(temp_std) | (3 * temp_std) < 10 |
@@ -33,6 +33,64 @@ sites_source_particular_day <- left_join(daily_dat, latit_sit_id) %>%
   ungroup() %>%
   mutate(flag = ifelse(temp_degC < low_bound | temp_degC > up_bound,
                        "o", NA))
+
+# to find the number of observation and the number of flagged per group. 
+count_flag_groups <- sites_source_particular_day %>%
+  group_by(site_id, source, month, day_of_month) %>%
+  summarize(n_group = n(),
+            n_flagged = length(which(flag %in% 'o')),
+            prop_flagged = round(length(which(flag %in% 'o'))/n(), 4))
+# creating a subset that contains the flagged groups only. 
+flagged_groups_subset <- count_flag_groups %>%
+  filter(n_flagged != 0) %>%
+  group_by(n_group)
+
+flags_frequency <- table(flagged_groups_subset$n_flagged)
+percent_flagged_groups <- (nrow(flagged_groups_subset)/ 
+                          nrow(count_flag_groups)) * 100
+# plotting the flagged subset, number per group vs the number of flags. 
+p_flag_count = ggplot(flagged_groups_subset, aes(x = n_group, y =  n_flagged)) +
+  geom_point(aes(color = n_flagged)) +#, alpha = 0.15) + #aes(color = n_flagged
+  theme_bw() +
+  scale_x_continuous(limits = c(0,45),breaks = 0:45) +
+  cowplot::theme_cowplot() +
+  labs(title = 'Number of Outliers in Each Group',
+       x = 'Number of Observation in a Group',
+       y = 'Number of Outliers') +
+  theme(plot.title = element_text(hjust = 0.5))
+p_flag_count
+ggplotly(p_flag_count)
+# creating a histogram for the number of flagged 
+p_flag_freq = ggplot(flagged_groups_subset, aes(x = n_flagged)) +
+  geom_freqpoly() +
+  #theme_bw() +
+  #cowplot::theme_cowplot() +
+  labs(title = 'The Frequency of Outliers in Groups',
+       x = 'Number of Outliers',
+       y = 'Frequency') +
+  theme(plot.title = element_text(hjust = 0.5))
+p_flag_freq
+ggplotly(p_flag_freq) 
+
+# number of unique sites that used stats to calculate cutoff limit. 
+# sites that required the std replacement.
+fix_value_group <- sites_source_particular_day %>%
+  #filter(!is.na(temp_std)) %>%
+  filter(!outlier_cut_off %in% 10) 
+# Finding the different std values
+site_w_na_std <- length(which(sites_source_particular_day$temp_std %in% NA))
+site_w_0_std <- length(which(sites_source_particular_day$temp_std == 0))
+site_w_large_std <- length(which((3 * sites_source_particular_day$temp_std) >= 15))
+site_w_small_std <- length(which((3 * sites_source_particular_day$temp_std) > 0 
+                                 & (3 * sites_source_particular_day$temp_std) <= 10))
+# proportions of the different std-values. 
+prop_na_std <- site_w_na_std / nrow(sites_source_particular_day) * 100
+prop_0_std <- site_w_0_std/nrow(sites_source_particular_day) * 100
+prop_na_0_std <- (site_w_na_std + site_w_0_std) / nrow(sites_source_particular_day) * 100
+prop_large_std <- site_w_large_std/ nrow(sites_source_particular_day) * 100
+prop_small_std <- site_w_small_std/nrow(sites_source_particular_day) * 100
+# finding how many sites required the std replacement. 
+length(which(count_site_source_day$outlier_cut_off == 10))
 
 #finding the number of unique sites. 
 sites <- unique(sites_source_particular_day$site_id)
@@ -134,7 +192,8 @@ ggplotly(p_special)
 
 #finding the number of observation  per site using this grouping. 
 count_site_source_day <- left_join(daily_dat, latit_sit_id) %>%
-  group_by(site_id, source, day_of_year = lubridate::yday(date))%>%
+  group_by(site_id, source, month = lubridate::month(date), 
+           day_of_month = lubridate::day(date))%>%
   summarize(n_per_site = n(),
             temp_mean = mean(temp_degC), 
             temp_std = sd(temp_degC),
@@ -142,41 +201,34 @@ count_site_source_day <- left_join(daily_dat, latit_sit_id) %>%
                                        (3 * temp_std) > 15,  10, 3 * temp_std),
             low_bound = temp_mean - outlier_cut_off,
             up_bound = temp_mean + outlier_cut_off) %>%
-  ungroup() %>%
-  mutate(flag = ifelse(temp_degC < low_bound | temp_degC > up_bound,
-                       "o", NA))
-
+            #flag = ifelse(temp_degC < low_bound | temp_degC > up_bound,
+             #                    "o", NA)) %>%
+  ungroup()
   
-
-
-# to find the number of observation and the number of outliers per group. 
-group_flag_count <- sites_source_particular_day %>%
-  select(date, bins_lat, temp_mean, temp_std)  %>%
-  group_by(site_id, source, day_of_year = lubridate::yday(date)) %>%
-  summarize(n_per_site = n()) %>%
-  mutate(n_flagged = ifelse(flag == 'o', n_flagged + 1, n_flagged))
-# to find the number of groups with 1 observation
-groups_1_obs <- filter(count_site_source_day, n_per_site %in% 1) 
-n_groups_1_obs <- nrow(groups_1_obs)
-percent_groups_1_obs <- n_groups_1_obs/nrow(count_site_source_day)
-sites_1_obs <- length(unique(groups_1_obs$site_id))
-
-  
+            # get the number of site-days that meet that category in the data.
+                     # n_site_days = length(unique(unique_id))) 
+# to find the number of groups with n observation
+# number of observation n (1,2,3,5,10,20) per group
+n_site_day = c(1, 2, 3, 5, 10, 15, 20)
+n_obs_per_group <- count_site_source_day %>%
+  filter(n_per_site %in% n_site_day) %>%
+  group_by(n_per_site) %>%
+  summarize(n_group = n()) %>%
+  mutate(prop_group = round(n_group / nrow(count_site_source_day)* 100 ,4))
+# making histogram of n-observation per group:
+p_group_obs = ggplot(n_obs_per_group, aes(x = n_per_site, y = prop_group)) +
+  geom_col(color = "black", fill = "antiquewhite") +
+  theme_bw() +
+  cowplot::theme_cowplot() +
+  labs(title = 'Proportion of Observation in Each Group',
+       x = 'N per Group',
+       y = 'Proportion') +
+  theme(plot.title = element_text(hjust = 0.5))
+p_group_obs
+ggplotly(p_group_obs)
 # number of sites in our data
 sites <- unique(count_site_source_day$site_id)
-# number of unique sites that used stats to calculate cutoff limit. 
-cal_stat_sit <- sites_source_particular_day %>%
-  filter(!outlier_cut_off %in% 10)
-length(unique(cal_stat_sit$site_id))
 
-# number of sites which have few temperature observation.
-low_obs_site <- count_site_source_day %>%
-  filter(n_per_site <= 1 & source %in% "wqp" & month == 1 & day == 21)
-number_site_month_day <- length(unique(low_obs_site$site_id))
-length(unique(count_site_source_day$site_id))
-
-# finding how many sites required the std replacement. 
-num_std_replacement <- table(count_site_source_day$outlier_cut_off == 10)
 
 # and how many observation does theses sites have. 
 # looking at specific latitude_bin
