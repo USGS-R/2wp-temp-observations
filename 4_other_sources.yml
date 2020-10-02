@@ -7,7 +7,7 @@ packages:
   - stringr
   - readxl
   - sf
-  
+
 sources:
   - 4_other_sources/src/get_ecosheds_data.R
   - 4_other_sources/src/get_norwest_data.R
@@ -17,43 +17,40 @@ targets:
     depends:
       - 4_other_sources/out/ecosheds_summary.csv
       - 4_other_sources/out/norwest_raw_files.yml
-    
-  # Eco-SHEDS data  
+
+  # Eco-SHEDS data
   # unzip values and metadata, merge, and write EcoSHEDS data
   # files sent by Jeff Walker on 6/22 - includes all public-facing EcoSHEDS daily data
 
-  4_other_sources/out/ecosheds_data.rds.ind:  
+  4_other_sources/out/ecosheds_data.rds.ind:
     command: unzip_merge_values(
       zip_ind = '4_other_sources/in/sheds-public-data-20200723.zip.ind',
       out_ind = target_name)
-      
+
   4_other_sources/out/ecosheds_sites.rds.ind:
     command: unzip_extract_sites(
       zip_ind = '4_other_sources/in/sheds-public-data-20200723.zip.ind',
       out_ind = target_name)
-      
+
   4_other_sources/out/ecosheds_summary.csv:
     command: summarize_ecosheds_data(
       data_ind = '4_other_sources/out/ecosheds_data.rds.ind', out_file = target_name)
-      
+
 ##############################
 ## get NorWeST data ##########
 ##############################
 
   norwest_url:
     command: c(I('https://www.fs.fed.us/rm/boise/AWAE/projects/NorWeST/StreamTemperatureDataSummaries.shtml'))
-    
-  download_base_url:
-    command: c(I('https://www.fs.fed.us/rm/boise/AWAE/projects/NorWeST/downloads/ObservedStreamTemperatureMaps'))
-  
+
   dl_filenames:
     command: get_filenames(url = norwest_url)
-    
-  # this creates a list of files and hashes for the two 
+
+  # this creates a list of files and hashes for the two
   # output data files, raw data and raw sites
   4_other_sources/out/norwest_raw_files.yml:
     command: do_data_file_tasks(
       files = dl_filenames,
-      base_url = download_base_url,
+      download_base_url = I('https://www.fs.fed.us/rm/boise/AWAE/projects/NorWeST/downloads/ObservedStreamTemperatureMaps'),
       out_file = target_name,
       '4_other_sources/src/get_norwest_data.R')
