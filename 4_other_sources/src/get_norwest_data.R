@@ -38,6 +38,7 @@ get_filenames <- function(url) {
 
 do_data_file_tasks <- function(files, base_url, out_file, ...) {
   task_name <- files$tasks
+  task_file <- '4_norwest_datafile_tasks.yml'
 
   download_temp_data <- create_task_step(
     step_name = 'download_temp_data',
@@ -68,16 +69,16 @@ do_data_file_tasks <- function(files, base_url, out_file, ...) {
   # Create the task remakefile
   create_task_makefile(
     task_plan = task_plan,
-    makefile = '4_norwest_datafile_tasks.yml',
+    makefile = task_file,
     include = 'remake.yml',
     sources = c(...),
-    packages = c('dplyr', 'stringr', 'sf', 'readxl'),
+    packages = c('dplyr', 'stringr', 'sf', 'readxl', 'readr'),
     tickquote_combinee_objects = TRUE,
     finalize_funs = c('combine_temp_data', 'combine_site_data'),
     final_targets = c('4_other_sources/out/norwest_raw_temp_data.feather.ind', '4_other_sources/out/norwest_raw_site_data.rds.ind'),
     as_promises = TRUE)
 
-  loop_tasks(task_plan, '4_norwest_datafile_tasks.yml')
+  loop_tasks(task_plan, task_file)
   combine_to_ind(out_file, c('4_other_sources/out/norwest_raw_temp_data.feather', '4_other_sources/out/norwest_raw_site_data.rds'))
   #scmake('raw_norwest_data.rds.ind_promise', remake_file='4_norwest_datafile_tasks.yml')
 }
