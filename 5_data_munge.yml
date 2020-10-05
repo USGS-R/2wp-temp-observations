@@ -66,7 +66,8 @@ targets:
 
   5_data_munge/out/norwest_munged.rds.ind:
     command: munge_norwest(
-      in_ind = '4_other_sources/out/norwest_raw_files.yml',
+      sites_ind = '4_other_sources/out/norwest_raw_site_data.rds.ind',
+      dat_ind = '4_other_sources/out/norwest_raw_temp_data.feather.ind'
       min_value, max_value, out_ind = target_name)
 
   # bring it all together
@@ -85,7 +86,7 @@ targets:
       nwis_uv_sites_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind',
       ecosheds_sites_ind = '4_other_sources/out/ecosheds_sites.rds.ind',
       wqp_sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind',
-      norwest_sites_ind = '4_other_sources/out/norwest_raw_files.yml')
+      norwest_sites_ind = '4_other_sources/out/norwest_raw_site_data.rds.ind')
 
   5_data_munge/out/daily_temperatures_summary.csv:
     command: summarize_all_dat(

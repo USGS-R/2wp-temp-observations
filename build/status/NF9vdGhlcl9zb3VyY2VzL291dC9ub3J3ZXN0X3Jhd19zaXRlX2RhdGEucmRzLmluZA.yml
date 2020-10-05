@@ -1,0 +1,11 @@
+version: 0.3.0
+name: 4_other_sources/out/norwest_raw_site_data.rds.ind
+type: file
+hash: 2f0e80b45810320d25011f2d039b6385
+time: 2020-10-05 17:48:05 UTC
+depends:
+  norwest_raw_files: 39c3e97c7f2c6a4a976d3156051edb18
+fixed: ~
+code:
+  functions: {}
+

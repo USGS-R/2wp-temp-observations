@@ -36,7 +36,7 @@ get_filenames <- function(url) {
   return(file_downloads)
 }
 
-do_data_file_tasks <- function(files, download_base_url, out_file, ...) {
+do_data_file_tasks <- function(files, download_base_url, ...) {
   task_name <- files$tasks
   task_file <- '4_norwest_datafile_tasks.yml'
 
@@ -46,7 +46,7 @@ do_data_file_tasks <- function(files, download_base_url, out_file, ...) {
       sprintf('%s_temperature_data', task_name)
     },
     command = function(task_name, ...) {
-      sprintf("fetch_data_files(base_url = I('%s'), files = dl_filenames, region = I('%s'))", download_base_url, task_name)
+      sprintf("fetch_data_files(base_url = I('%s'), files = norwest_dl_filenames, region = I('%s'))", download_base_url, task_name)
     }
   )
 
@@ -56,7 +56,7 @@ do_data_file_tasks <- function(files, download_base_url, out_file, ...) {
       sprintf('%s_site_data', task_name)
     },
     command = function(task_name, ...) {
-      sprintf("fetch_site_files(base_url = I('%s'), files = dl_filenames, region = I('%s'))", download_base_url, task_name)
+      sprintf("fetch_site_files(base_url = I('%s'), files = norwest_dl_filenames, region = I('%s'))", download_base_url, task_name)
     }
   )
 
@@ -79,7 +79,7 @@ do_data_file_tasks <- function(files, download_base_url, out_file, ...) {
     as_promises = TRUE)
 
   loop_tasks(task_plan, task_file)
-  combine_to_ind(out_file, c('4_other_sources/out/norwest_raw_temp_data.feather', '4_other_sources/out/norwest_raw_site_data.rds'))
+  return(c(yaml::read_yaml('4_other_sources/out/norwest_raw_temp_data.feather.ind'), yaml::read_yaml('4_other_sources/out/norwest_raw_site_data.rds.ind')))
   #scmake('raw_norwest_data.rds.ind_promise', remake_file='4_norwest_datafile_tasks.yml')
 }
 # download and unzip file, return rds

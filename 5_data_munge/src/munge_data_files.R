@@ -52,10 +52,8 @@ munge_ecosheds <- function(in_ind, min_value, max_value, out_ind) {
 }
 
 munge_norwest <- function(in_ind, min_value, max_value, out_ind) {
-  files <- yaml::read_yaml(in_ind)
-  in_ind <- as_ind_file(names(files)[1])
-  sites_ind <- as_ind_file(names(files)[2])
-  dat <- feather::read_feather(sc_retrieve(in_ind, 'getters.yml'))
+
+  dat <- feather::read_feather(sc_retrieve(dat_ind, 'getters.yml'))
   sites <- readRDS(sc_retrieve(sites_ind, 'getters.yml')) %>%
     sf::st_drop_geometry() %>%
     mutate(site_meta = TRUE) %>%
@@ -139,8 +137,8 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
 
 }
 
-combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_ind, ecosheds_sites_ind, out_ind){
-  norwest_sites <- readRDS(sc_retrieve(as_ind_file(names(yaml::read_yaml(norwest_sites_ind))[2]), 'getters.yml')) %>%
+combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_ind, ecosheds_sites_ind, norwest_sites_ind, out_ind){
+  norwest_sites <- readRDS(sc_retrieve(norwest_sites_ind, 'getters.yml')) %>%
     mutate(source = 'norwest',
            original_source = Source,
            site_id = paste(region, OBSPRED_ID, sep = '_'),
