@@ -67,7 +67,7 @@ targets:
   5_data_munge/out/norwest_munged.rds.ind:
     command: munge_norwest(
       sites_ind = '4_other_sources/out/norwest_raw_site_data.rds.ind',
-      dat_ind = '4_other_sources/out/norwest_raw_temp_data.feather.ind'
+      dat_ind = '4_other_sources/out/norwest_raw_temp_data.feather.ind',
       min_value, max_value, out_ind = target_name)
 
   # bring it all together
