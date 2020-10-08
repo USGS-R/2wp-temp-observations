@@ -16,7 +16,9 @@ targets:
   4_other_sources:
     depends:
       - 4_other_sources/out/ecosheds_summary.csv
-      - 4_other_sources/out/norwest_raw_files.yml
+      - 4_other_sources/out/ecosheds_sites.rds.ind
+      - 4_other_sources/out/norwest_raw_site_data.rds.ind
+      - 4_other_sources/out/norwest_raw_temp_data.feather.ind
 
   # Eco-SHEDS data
   # unzip values and metadata, merge, and write EcoSHEDS data
