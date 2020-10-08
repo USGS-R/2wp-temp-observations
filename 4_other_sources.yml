@@ -48,17 +48,18 @@ targets:
 
   # this returns hashes of the two indicator files
   # created by the task file
-  norwest_raw_files:
+  4_other_sources/out/norwest_raw_files.yml:
     command: do_data_file_tasks(
+      out_file = target_name,
       files = norwest_dl_filenames,
       download_base_url = I('https://www.fs.fed.us/rm/boise/AWAE/projects/NorWeST/downloads/ObservedStreamTemperatureMaps'),
       '4_other_sources/src/get_norwest_data.R')
 
-  # pull out indicators explicity here, depend on norwest_raw_files
+  # pull out indicators explicity here, depend on norwest_raw_files.yml
   4_other_sources/out/norwest_raw_site_data.rds.ind:
     command: c()
-    depends: norwest_raw_files
+    depends: '4_other_sources/out/norwest_raw_files.yml'
 
   4_other_sources/out/norwest_raw_temp_data.feather.ind:
     command: c()
-    depends: norwest_raw_files
+    depends: '4_other_sources/out/norwest_raw_files.yml'
