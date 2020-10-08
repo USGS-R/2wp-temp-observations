@@ -154,17 +154,17 @@ combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_in
     bind_rows(feather::read_feather(sc_retrieve(nwis_uv_sites_ind, remake_file = 'getters.yml')) %>%
                 mutate(source = 'nwis_uv')) %>%
     mutate(site_id = paste0('USGS-', site_no)) %>%
-    select(site_id, site_type = site_tp_cd, latitude = dec_lat_va, longitude = dec_long_va, source)
+    select(site_id, site_type = site_tp_cd, latitude = dec_lat_va, longitude = dec_long_va, source, original_source = agency_cd)
 
   wqp_sites <- feather::read_feather(sc_retrieve(wqp_sites_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'wqp') %>%
     select(site_id = MonitoringLocationIdentifier, latitude, longitude,
-           site_type = ResolvedMonitoringLocationTypeName, source)
+           site_type = ResolvedMonitoringLocationTypeName, source, original_source = OrganizationIdentifier)
 
   ecosheds_sites <- readRDS(sc_retrieve(ecosheds_sites_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'ecosheds', site_type = 'stream',
            site_id = as.character(location_id)) %>%
-    select(site_id, latitude, longitude, site_type, source)
+    select(site_id, latitude, longitude, site_type, source, original_source = agency_description)
 
   all_sites <- bind_rows(nwis_sites, wqp_sites, ecosheds_sites, norwest_sites)
 

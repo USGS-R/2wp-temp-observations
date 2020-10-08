@@ -1,8 +1,8 @@
 version: 0.3.0
 name: 5_data_munge/out/all_sites.rds.ind
 type: file
-hash: 77d23140da4cd5f9f1839e2958d24a69
-time: 2020-10-08 16:00:23 UTC
+hash: 2eb531dfedc7c657c836bb8318cae4cd
+time: 2020-10-08 16:32:20 UTC
 depends:
   2_nwis_pull/inout/nwis_dv_inventory.feather.ind: 414fe10d845df80335d9a57ab0426b5c
   2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind: bcda844e1aa0d8c9f0aee673cef4ca15
@@ -12,5 +12,5 @@ depends:
 fixed: af8502e30f5ca78e5ba32bf3481170d3
 code:
   functions:
-    combine_all_sites: 10259d1ae8697f4318caf7377131fb8b
+    combine_all_sites: dbb94c97815942f5ef3360799ac2b8c3
 

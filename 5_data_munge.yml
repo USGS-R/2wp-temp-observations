@@ -88,6 +88,11 @@ targets:
       wqp_sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind',
       norwest_sites_ind = '4_other_sources/out/norwest_raw_site_data.rds.ind')
 
+  # clean up data for release
+  # QAQC, match to river sites and reduce redunancy
+  # get rid of non-stream sites
+  # get rid of sites outside of US states/territories
+
   5_data_munge/out/daily_temperatures_summary.csv:
     command: summarize_all_dat(
       in_ind = '5_data_munge/out/daily_temperatures.rds.ind',
