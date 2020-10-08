@@ -51,7 +51,7 @@ munge_ecosheds <- function(in_ind, min_value, max_value, out_ind) {
 
 }
 
-munge_norwest <- function(in_ind, min_value, max_value, out_ind) {
+munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
 
   dat <- feather::read_feather(sc_retrieve(dat_ind, 'getters.yml'))
   sites <- readRDS(sc_retrieve(sites_ind, 'getters.yml')) %>%
@@ -104,7 +104,7 @@ munge_norwest <- function(in_ind, min_value, max_value, out_ind) {
   gd_put(out_ind)
 }
 
-combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
+combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_ind) {
   wqp <- readRDS(sc_retrieve(wqp_ind, remake_file = 'getters.yml')) %>%
     ungroup() %>%
     mutate(date = as.Date(ActivityStartDate), source = 'wqp') %>%
@@ -122,7 +122,7 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
            site_id = as.character(location_id)) %>%
     select(site_id, date, temp_degC = mean, n_obs = n, source)
 
-  norwest <- readRDS(sc_retrieve(norwest_ind), 'getters.yml') %>%
+  norwest <- readRDS(sc_retrieve(norwest_ind, 'getters.yml')) %>%
     mutate(source = 'norwest',
            site_id = paste(region, OBSPRED_ID, sep = '_')) %>%
     select(site_id, date = SampleDate, temp_degC = DailyMean, n_obs = Nobs, source)
