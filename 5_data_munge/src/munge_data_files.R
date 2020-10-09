@@ -204,16 +204,17 @@ clean_sites <- function(in_ind, out_ind) {
 
   # draw a bbox with small buffer for main geographic areas - lower 48, hawaii, alaska, PR
   # puerto rico
-  puerto <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[52, ])), dist = 0.1))
+  puerto <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[52, ])), dist = 2000))
   pot_puerto <- sites_no_state[which(!is.na(as.numeric(puerto))), ]
+
   # alaska
-  alaska <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[50, ])), dist = 0.1))
+  alaska <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[50, ])), dist = 2000))
   pot_alaska <- sites_no_state[which(!is.na(as.numeric(alaska))), ]
   # hawaii
-  hawaii <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[51, ])), dist = 0.1))
+  hawaii <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[51, ])), dist = 2000))
   pot_hawaii <- sites_no_state[which(!is.na(as.numeric(hawaii))), ]
   # lower 48
-  lower <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[1:49, ])), dist = 0.3))
+  lower <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[1:49, ])), dist = 2000))
   pot_lower <- sites_no_state[which(!is.na(as.numeric(lower))), ] %>% select(-ID)
 
   # find nearest shape for each of these potential sites
