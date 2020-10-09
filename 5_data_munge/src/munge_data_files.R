@@ -184,10 +184,10 @@ clean_sites <- function(in_ind, out_ind) {
 
   proj_albers <- "+proj=laea +lat_0=45 +lon_0=-100 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs"
 
-  states <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
-    bind_rows(mutate(st_as_sf(map('world', 'USA:Alaska', plot = FALSE, fill = TRUE)), ID = 'alaska'),
-              mutate(st_as_sf(map('world', 'USA:Hawaii', plot = FALSE, fill = TRUE)), ID = 'hawaii'),
-              mutate(st_as_sf(map('world', 'Puerto Rico', plot = FALSE, fill = TRUE)), ID = 'puerto rico')) %>%
+  states <- st_as_sf(maps::map("state", plot = FALSE, fill = TRUE)) %>%
+    bind_rows(mutate(st_as_sf(maps::map('world', 'USA:Alaska', plot = FALSE, fill = TRUE)), ID = 'alaska'),
+              mutate(st_as_sf(maps::map('world', 'USA:Hawaii', plot = FALSE, fill = TRUE)), ID = 'hawaii'),
+              mutate(st_as_sf(maps::map('world', 'Puerto Rico', plot = FALSE, fill = TRUE)), ID = 'puerto rico')) %>%
     st_transform(crs = proj_albers)
 
   #states_with_buffer <- st_buffer(states, dist = 1)
@@ -204,17 +204,22 @@ clean_sites <- function(in_ind, out_ind) {
 
   # draw a bbox with small buffer for main geographic areas - lower 48, hawaii, alaska, PR
   # puerto rico
-  puerto <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[52, ])), dist = 2000))
+  puerto <- st_intersects(sites_no_state, st_buffer(states[52, ], dist = 3000))
   pot_puerto <- sites_no_state[which(!is.na(as.numeric(puerto))), ]
 
   # alaska
-  alaska <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[50, ])), dist = 2000))
+  # some island weirdness here (low resolution shapefile?), so had to up the buffer distance
+  alaska <- st_intersects(sites_no_state, st_buffer(states[50, ], dist = 40000))
   pot_alaska <- sites_no_state[which(!is.na(as.numeric(alaska))), ]
+
   # hawaii
-  hawaii <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[51, ])), dist = 2000))
+  hawaii <- st_intersects(sites_no_state, st_buffer(states[51, ], dist = 4000))
   pot_hawaii <- sites_no_state[which(!is.na(as.numeric(hawaii))), ]
+
   # lower 48
-  lower <- st_intersects(sites_no_state, st_buffer(st_as_sfc(st_bbox(states[1:49, ])), dist = 2000))
+  # have to use a big buffer to get some of the estuary sites out east
+  lower_shape <- st_transform(st_as_sf(maps::map('world','USA(?!:hawaii)(?!:alaska)', plot = FALSE, fill = TRUE)), crs = proj_albers)
+  lower <- st_intersects(sites_no_state, st_buffer(lower_shape, dist = 20000))
   pot_lower <- sites_no_state[which(!is.na(as.numeric(lower))), ] %>% select(-ID)
 
   # find nearest shape for each of these potential sites
