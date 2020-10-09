@@ -36,9 +36,12 @@ get_filenames <- function(url) {
   return(file_downloads)
 }
 
-do_data_file_tasks <- function(files, download_base_url, ...) {
+do_data_file_tasks <- function(files, download_base_url, out_file, ...) {
   task_name <- files$tasks
   task_file <- '4_norwest_datafile_tasks.yml'
+  download_loc <- '4_other_sources/tmp'
+
+  if (!exists(download_loc)) {dir.create(download_loc)}
 
   download_temp_data <- create_task_step(
     step_name = 'download_temp_data',
@@ -79,8 +82,10 @@ do_data_file_tasks <- function(files, download_base_url, ...) {
     as_promises = TRUE)
 
   loop_tasks(task_plan, task_file)
-  return(c(yaml::read_yaml('4_other_sources/out/norwest_raw_temp_data.feather.ind'), yaml::read_yaml('4_other_sources/out/norwest_raw_site_data.rds.ind')))
-  #scmake('raw_norwest_data.rds.ind_promise', remake_file='4_norwest_datafile_tasks.yml')
+
+  combine_to_ind(out_file,
+              '4_other_sources/out/norwest_raw_temp_data.feather',
+              '4_other_sources/out/norwest_raw_site_data.rds')
 }
 # download and unzip file, return rds
 fetch_data_files <- function(base_url, files, region, tmp_loc = '4_other_sources/tmp') {

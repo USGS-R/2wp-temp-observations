@@ -51,7 +51,7 @@ munge_ecosheds <- function(in_ind, min_value, max_value, out_ind) {
 
 }
 
-munge_norwest <- function(in_ind, min_value, max_value, out_ind) {
+munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
 
   dat <- feather::read_feather(sc_retrieve(dat_ind, 'getters.yml'))
   sites <- readRDS(sc_retrieve(sites_ind, 'getters.yml')) %>%
@@ -104,7 +104,7 @@ munge_norwest <- function(in_ind, min_value, max_value, out_ind) {
   gd_put(out_ind)
 }
 
-combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
+combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_ind) {
   wqp <- readRDS(sc_retrieve(wqp_ind, remake_file = 'getters.yml')) %>%
     ungroup() %>%
     mutate(date = as.Date(ActivityStartDate), source = 'wqp') %>%
@@ -122,7 +122,7 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, out_ind) {
            site_id = as.character(location_id)) %>%
     select(site_id, date, temp_degC = mean, n_obs = n, source)
 
-  norwest <- readRDS(sc_retrieve(norwest_ind), 'getters.yml') %>%
+  norwest <- readRDS(sc_retrieve(norwest_ind, 'getters.yml')) %>%
     mutate(source = 'norwest',
            site_id = paste(region, OBSPRED_ID, sep = '_')) %>%
     select(site_id, date = SampleDate, temp_degC = DailyMean, n_obs = Nobs, source)
@@ -154,17 +154,17 @@ combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_in
     bind_rows(feather::read_feather(sc_retrieve(nwis_uv_sites_ind, remake_file = 'getters.yml')) %>%
                 mutate(source = 'nwis_uv')) %>%
     mutate(site_id = paste0('USGS-', site_no)) %>%
-    select(site_id, site_type = site_tp_cd, latitude = dec_lat_va, longitude = dec_long_va, source)
+    select(site_id, site_type = site_tp_cd, latitude = dec_lat_va, longitude = dec_long_va, source, original_source = agency_cd)
 
   wqp_sites <- feather::read_feather(sc_retrieve(wqp_sites_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'wqp') %>%
     select(site_id = MonitoringLocationIdentifier, latitude, longitude,
-           site_type = ResolvedMonitoringLocationTypeName, source)
+           site_type = ResolvedMonitoringLocationTypeName, source, original_source = OrganizationIdentifier)
 
   ecosheds_sites <- readRDS(sc_retrieve(ecosheds_sites_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'ecosheds', site_type = 'stream',
            site_id = as.character(location_id)) %>%
-    select(site_id, latitude, longitude, site_type, source)
+    select(site_id, latitude, longitude, site_type, source, original_source = agency_description)
 
   all_sites <- bind_rows(nwis_sites, wqp_sites, ecosheds_sites, norwest_sites)
 
@@ -178,4 +178,69 @@ summarize_all_dat <- function(in_ind, out_file) {
   summary <- data.frame(n_obs = nrow(dat_summary), n_sites = length(unique(dat_summary$site_id)))
 
   readr::write_csv(summary, out_file)
+}
+
+clean_sites <- function(in_ind, out_ind) {
+
+  proj_albers <- "+proj=laea +lat_0=45 +lon_0=-100 +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs"
+
+  states <- st_as_sf(maps::map("state", plot = FALSE, fill = TRUE)) %>%
+    bind_rows(mutate(st_as_sf(maps::map('world', 'USA:Alaska', plot = FALSE, fill = TRUE)), ID = 'alaska'),
+              mutate(st_as_sf(maps::map('world', 'USA:Hawaii', plot = FALSE, fill = TRUE)), ID = 'hawaii'),
+              mutate(st_as_sf(maps::map('world', 'Puerto Rico', plot = FALSE, fill = TRUE)), ID = 'puerto rico')) %>%
+    st_transform(crs = proj_albers)
+
+  #states_with_buffer <- st_buffer(states, dist = 1)
+  # filter sites that are outside of the bounding box
+  sites <- readRDS(sc_retrieve(in_ind, 'getters.yml')) %>%
+    # filter to stream sites
+    filter(site_type %in% c('ST', 'ST-TS', 'ST-CA','ST-DCH', 'Spring', 'Stream', 'stream', '')) %>%
+    st_as_sf(coords = c('longitude', 'latitude'), crs = 4326) %>% #create sf object
+    st_transform(crs = proj_albers) %>%
+    st_join(states, join = st_within) # match sites that are within state polygons
+
+  # find path forward for those sites outside of polygons
+  sites_no_state <- filter(sites, is.na(ID))
+
+  # draw a bbox with small buffer for main geographic areas - lower 48, hawaii, alaska, PR
+  # puerto rico
+  puerto <- st_intersects(sites_no_state, st_buffer(states[52, ], dist = 3000))
+  pot_puerto <- sites_no_state[which(!is.na(as.numeric(puerto))), ]
+
+  # alaska
+  # some island weirdness here (low resolution shapefile?), so had to up the buffer distance
+  alaska <- st_intersects(sites_no_state, st_buffer(states[50, ], dist = 40000))
+  pot_alaska <- sites_no_state[which(!is.na(as.numeric(alaska))), ]
+
+  # hawaii
+  hawaii <- st_intersects(sites_no_state, st_buffer(states[51, ], dist = 4000))
+  pot_hawaii <- sites_no_state[which(!is.na(as.numeric(hawaii))), ]
+
+  # lower 48
+  # have to use a big buffer to get some of the estuary sites out east
+  lower_shape <- st_transform(st_as_sf(maps::map('world','USA(?!:hawaii)(?!:alaska)', plot = FALSE, fill = TRUE)), crs = proj_albers)
+  lower <- st_intersects(sites_no_state, st_buffer(lower_shape, dist = 20000))
+  pot_lower <- sites_no_state[which(!is.na(as.numeric(lower))), ] %>% select(-ID)
+
+  # find nearest shape for each of these potential sites
+  # for out-states, we assume those to be the outstate
+  # for lower 48, we use nearest feature join
+  sites_fixed_ids <- mutate(pot_puerto, ID = 'puerto rico') %>%
+    bind_rows(mutate(pot_alaska, ID = 'alaska')) %>%
+    bind_rows(mutate(pot_hawaii, ID = 'hawaii')) %>%
+    bind_rows(st_join(x = pot_lower, y = states, join = st_nearest_feature))
+
+  # check sites that have no match
+  # some of these are in Samoan Islands, some appear to have the wrong longitude (high positive numbers)
+  # e.g., site 	21FLCOSP_WQX-45-03, if I turn the longitude to a negative value, lands in a stream in Florida
+  # just ignoring these for now
+  test <- filter(sites_no_state, !site_id %in% sites_fixed_ids$site_id)
+
+  sites_fixed <- filter(sites, !is.na(ID)) %>%
+    bind_rows(sites_fixed_ids) %>%
+    st_transform(crs = 4326)
+
+  saveRDS(sites_fixed, as_data_file(out_ind))
+  gd_put(out_ind)
+
 }

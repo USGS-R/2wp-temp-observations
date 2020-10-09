@@ -3,6 +3,8 @@ target_default: 5_data_munge
 packages:
   - scipiper
   - dplyr
+  - maps
+  - sf
 
 sources:
   - 5_data_munge/src/munge_data_files.R
@@ -67,7 +69,7 @@ targets:
   5_data_munge/out/norwest_munged.rds.ind:
     command: munge_norwest(
       sites_ind = '4_other_sources/out/norwest_raw_site_data.rds.ind',
-      dat_ind = '4_other_sources/out/norwest_raw_temp_data.feather.ind'
+      dat_ind = '4_other_sources/out/norwest_raw_temp_data.feather.ind',
       min_value, max_value, out_ind = target_name)
 
   # bring it all together
@@ -87,6 +89,12 @@ targets:
       ecosheds_sites_ind = '4_other_sources/out/ecosheds_sites.rds.ind',
       wqp_sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind',
       norwest_sites_ind = '4_other_sources/out/norwest_raw_site_data.rds.ind')
+
+  # clean up sites
+  # get rid of non-stream sites
+  # get rid of sites outside of US states/territories
+  5_data_munge/out/stream_sites_us.rds.ind:
+    command: clean_sites(in_ind = '5_data_munge/out/all_sites.rds.ind', out_ind = target_name)
 
   5_data_munge/out/daily_temperatures_summary.csv:
     command: summarize_all_dat(
