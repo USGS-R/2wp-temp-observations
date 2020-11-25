@@ -17,7 +17,8 @@ targets:
       - 5_data_munge/out/daily_temperatures_summary.csv
       - 5_data_munge/out/all_sites.rds.ind
       - 5_data_munge/out/daily_temperatures_qaqc.rds.ind
-      - 5_data_munge/out/daily_temperatures_qaqc_summary.csv
+      - 5_data_munge/out/flagged_temperature_data.csv
+      - 5_data_munge/out/binned_daily_temperatures_qaqc_summary.csv
     
 # -- For WQP and NWISuv, first do a coarse QA, then reduce to daily  -- #
 # -- For NWISdv, do the coarse QA  -- #
@@ -33,6 +34,25 @@ targets:
     
   stream_types:
     command: c(I(c('Stream', 'Spring')))
+  
+  #declaring doy, long, and lat bins values.  
+  doy_lim:
+    command: I(6)
+    
+  long_deg:
+    command: I(1)
+    
+  lat_deg:
+    command: I(1)
+    
+  yard_stick:
+    command: I(5) 
+    
+  lb:
+    command: I(10)  # lower bound
+    
+  ub:
+    command: I(15)  # upper bound  
     
   # first, limit to stream data
   5_data_munge/out/wqp_data_streams.rds.ind:
@@ -97,8 +117,12 @@ targets:
       site_in_ind = '5_data_munge/out/all_sites.rds.ind',
       out_ind = target_name)
       
-  5_data_munge/out/daily_temperatures_qaqc_summary.csv:
+  5_data_munge/out/flagged_temperature_data.csv:
+    command: outliers_summary(in_ind = '5_data_munge/out/daily_temperatures_qaqc.rds.ind',
+      out_file = target_name)
+      
+  5_data_munge/out/binned_daily_temperatures_qaqc_summary.csv:
     command: summary_qaqc_daily_temp_site('5_data_munge/out/daily_temperatures_qaqc.rds.ind',
-    out_file = target_name)
+      out_file = target_name)
       
       
