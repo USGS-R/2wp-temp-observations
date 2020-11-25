@@ -1,14 +1,15 @@
-############ Function to read the daily temperature and site ind data #######
-############  Create longitude, latitude, doy of the year bins ################
+############ Function to QAQC the daily temperature  #######
+############ Outlier detection using mean and standard deviation.
+############ created groups using site type, longitude latitude and doy bins, 
+############  calculated the mean and standard derivation to preform outlier detection. 
 qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind, out_ind) {
 
   # reading the daily temperature data-in, removing NA dates, 
   # and creating day of the year column.
   #creating doy bins with 6 days intervals.
-  doy_lim <- 6
-  daily_dat_mod <- readRDS(sc_retrieve(temp_in_ind), remake_file = '5_data_munge.yml') %>%
-  filter(!is.na(date)) %>%
-  mutate(doy = lubridate::yday(date),
+  daily_dat_mod <- readRDS(sc_retrieve(temp_in_ind), remake_file = 'getters.yml') %>%
+    filter(!is.na(date)) %>%
+    mutate(doy = lubridate::yday(date),
          doy_bins = cut(doy, breaks = 
                           seq(from = 0,
                               to = max(doy),
@@ -19,10 +20,7 @@ qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind, out_ind) {
   # creating  bins (interval) using the cut function.
   # using the seq function and setting the interval starts with min of long/latitude
   # and ends with max of latitude, and each interval size is 1.
-
-  long_deg <- 1
-  lat_deg <- 1
-  sites_dat_mod <- readRDS(sc_retrieve(site_in_ind), remake_file = '5_data_munge.yml') %>%
+  sites_dat_mod <- readRDS(sc_retrieve(site_in_ind), remake_file = 'getters.yml') %>%
     filter(!is.na(latitude)) %>%
     mutate(lat_bins = cut(latitude, breaks = 
                             seq(from = floor(min(latitude)),
@@ -38,10 +36,6 @@ qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind, out_ind) {
   # using 1 degree longitude and 1 latitude bins, 6 days of the year bins.
   # finding the mean and standard deviation of the temperature based on the above bins.
   # finding lower and up bounds then finding the flagged binned daily temperature data. 
-  yard_stick <- 5
-  lb <- 10  # lower bound
-  ub <- 15  # upper bound
-  
   binned_daily_data_complete <- left_join(daily_dat_mod, sites_dat_mod) %>%
     group_by(site_type, lat_bins, long_bins, doy_bins) %>%
     mutate(n_per_group = n(),
