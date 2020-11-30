@@ -1,17 +1,17 @@
 ###### function that count amount of data points that was flagged 
-###### and the proportions of the flagged data points.
+###### and the percentage of the flagged data points.
 
 outliers_summary <- function(in_ind, out_file) {
   daily_dat_flagged <- readRDS(sc_retrieve(in_ind), remake_file = 'getters.yml')%>%
   summarize(number_flags = length(which(flag %in% 'o')),
-            proportion_flags = round(number_flags/ nrow(in_ind) * 100, 4))
+            percent_flags = round(number_flags/ nrow(in_ind) * 100, 4))
   #saving the summary data 
   readr::write_csv(daily_dat_flagged, out_file)
 }
 
 
 ################### function to get summarizes about the binned daily data ####
-#################  number and proportions of flagged temperature observation 
+#################  number and percentage of flagged temperature observation 
 #################     and sites in a group/bin 
 
 summary_qaqc_daily_temp_site <- function(in_ind, out_file) {
@@ -31,9 +31,9 @@ summary_qaqc_daily_temp_site <- function(in_ind, out_file) {
   # number of bins with 3 of less observation.  
   bins_summary <- qaqc_flagged_temp %>%
     summarize(count_bins_flagged = length(which(n_flagged > 0)),
-              prop_bins_flagged = count_bins_flagged/n() * 100,
+              percent_bins_flagged = count_bins_flagged/n() * 100,
               median_obs_per_bin = median(n_per_group),
-              prop_bins_w_3_less_obs = (length(which(n_per_group <= 3))/n()) * 100) 
+              percent_bins_w_3_less_obs = (length(which(n_per_group <= 3))/n()) * 100) 
   
     #saving the summary data 
     readr::write_csv(bins_summary, out_file)
