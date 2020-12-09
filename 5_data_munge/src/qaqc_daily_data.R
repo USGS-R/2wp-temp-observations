@@ -2,7 +2,9 @@
 ############ Outlier detection using mean and standard deviation.
 ############ created groups using site type, longitude latitude and doy bins, 
 ############  calculated the mean and standard derivation to preform outlier detection. 
-qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind, out_ind) {
+qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind, 
+                                      doy_lim, long_deg, lat_deg, 
+                                      out_ind) {
 
   # reading the daily temperature data-in, removing NA dates, 
   # and creating day of the year column.
@@ -36,6 +38,9 @@ qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind, out_ind) {
   # using 1 degree longitude and 1 latitude bins, 6 days of the year bins.
   # finding the mean and standard deviation of the temperature based on the above bins.
   # finding lower and up bounds then finding the flagged binned daily temperature data. 
+  yard_stick <- 5
+  lb <- 10  # lower bound
+  ub <- 15  # upper bound
   binned_daily_data_complete <- left_join(daily_dat_mod, sites_dat_mod) %>%
     group_by(site_type, lat_bins, long_bins, doy_bins) %>%
     mutate(n_per_group = n(),
