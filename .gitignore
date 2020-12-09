@@ -26,5 +26,7 @@
 old/*
 
 # ignore geodb for national network
-# and delaware shape file
-8_delaware/in/*
+6_network/in/*/*
+6_network/out/*.rds
+*.png
+*.zip
