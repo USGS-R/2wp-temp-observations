@@ -8,7 +8,7 @@ packages:
   - ggthemes
   - scipiper
   - dplyr
-  
+
 sources:
   - 2_nwis_pull/src/inventory_nwis.R
   - lib/src/require_local.R
@@ -24,92 +24,92 @@ targets:
       - 2_nwis_pull/inout/nwis_uv_inventory_summary.csv
       - 2_nwis_pull/out/nwis_dv_summary.csv
       - 2_nwis_pull/out/nwis_uv_summary.csv
-      
-      
+
+
 # -- get a CONUS inventory of available data for download -- #
 
   # !! for a new pull, modify end date in '2_nwis_pull/cfg/nwis_pull_params.yml'
   nwis_pull_parameters:
     command: yaml.load_file('2_nwis_pull/cfg/nwis_pull_params.yml')
-    
-  nwis_pull_size: 
+
+  nwis_pull_size:
     command: I(250000)
-    
+
   # dummy pull dates
   # !! update these to rebuild inventory and NWIS pulls
   nwis_dv_pull_date:
     command: c(I('20200726'))
-    
+
   nwis_uv_pull_date:
     command: c(I('20200726'))
-    
+
   # -- get inventory of observations available to download -- #
 
   # dv data
   # force rebuilt of the inventories if you want to start over
   2_nwis_pull/inout/nwis_dv_inventory.feather.ind:
     command: inventory_nwis(inv_ind = target_name,
-      nwis_pull_params = nwis_pull_parameters, 
+      nwis_pull_params = nwis_pull_parameters,
       service = I('dv'))
     depends: nwis_dv_pull_date
-      
+
   # write summary table of inventory for quick PR comparison
   2_nwis_pull/inout/nwis_dv_inventory_summary.csv:
-    command: summarize_nwis_inventory(inv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
+    command: summarize_nwis_inventory(inv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind',
       out_file = target_name)
-  
-  # uv data 
+
+  # uv data
   2_nwis_pull/inout/nwis_uv_inventory.feather.ind:
     command: inventory_nwis(inv_ind = target_name,
-      nwis_pull_params = nwis_pull_parameters, 
+      nwis_pull_params = nwis_pull_parameters,
       service = I('uv'))
     depends: nwis_uv_pull_date
-    
+
   # create a table that compares services
   2_nwis_pull/inout/nwis_compare_services.feather.ind:
-    command: compare_services(dv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
+    command: compare_services(dv_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind',
       uv_ind = '2_nwis_pull/inout/nwis_uv_inventory.feather.ind', compare_ind = target_name)
-    
+
   # filter the UV inventory to only those sites that are not in DV
   # this isn't perfect - as some sites overlap but don't have the same data.
-  
+
   2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind:
-    command: reduce_redundancy(uv_inv_ind = '2_nwis_pull/inout/nwis_uv_inventory.feather.ind', 
+    command: reduce_redundancy(uv_inv_ind = '2_nwis_pull/inout/nwis_uv_inventory.feather.ind',
       compare_ind = '2_nwis_pull/inout/nwis_compare_services.feather.ind',
       out_ind = target_name)
-    
+
   # write summary table of inventory for quick PR comparison
   2_nwis_pull/inout/nwis_uv_inventory_summary.csv:
-    command: summarize_nwis_inventory(inv_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind', 
+    command: summarize_nwis_inventory(inv_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind',
       out_file = target_name)
-  
+
 
   # -- partition data -- #
   # dv
-      
+
   site_type_keep:
     command: c(I(c('ST', 'ST-CA', 'ST-DCH', 'ST-TS', 'SP')))
-    
+
   2_nwis_pull/inout/nwis_dv_partition.feather.ind:
-    command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind', 
-      nwis_pull_size, 
-      site_types = site_type_keep,
-      partitions_ind = target_name,
-      pull_date = nwis_dv_pull_date) 
-    
-  #uv
-  2_nwis_pull/inout/nwis_uv_partition.feather.ind:
-    command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind', 
+    command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind',
       nwis_pull_size,
       site_types = site_type_keep,
       partitions_ind = target_name,
-      pull_date = nwis_uv_pull_date) 
-    
+      pull_date = nwis_dv_pull_date)
+
+  #uv
+  2_nwis_pull/inout/nwis_uv_partition.feather.ind:
+    command: partition_inventory(inventory_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind',
+      nwis_pull_size,
+      site_types = site_type_keep,
+      partitions_ind = target_name,
+      pull_date = nwis_uv_pull_date)
+
   # -- create and execute tasks from pull table -- #
 
   # prepare a remake-style plan for running each partition as a separate
   # remake target in a separate remake file
-  
+
   #dv
   nwis_dv_pull_plan:
     command: plan_nwis_pull(partitions_ind='2_nwis_pull/inout/nwis_dv_partition.feather.ind',
@@ -124,13 +124,13 @@ targets:
       num_tries=I(30), sleep_on_error=I(20))
     depends:
       - 2_nwis_pull/src/nwis_pull.R
-  
-  # add summary and push to github  
+
+  # add summary and push to github
   2_nwis_pull/out/nwis_dv_summary.csv:
     command: summarize_nwis_data(
       data_ind = '2_nwis_pull/out/nwis_dv_data.rds.ind',
       out_file = target_name)
-      
+
   #uv
   nwis_uv_pull_plan:
     command: plan_nwis_pull(partitions_ind='2_nwis_pull/inout/nwis_uv_partition.feather.ind',
@@ -142,14 +142,14 @@ targets:
 
   temp_tasks:
     command: create_task_subset(nwis_uv_pull_plan)
-    
+
   2_nwis_pull/out/nwis_uv_data.rds.ind:
     command: loop_tasks(task_plan=nwis_uv_pull_plan, task_makefile='2_nwis_uv_pull_tasks.yml',
       num_tries=I(30), sleep_on_error=I(20))
     depends:
       - 2_nwis_pull/src/nwis_pull.R
 
-  # add summary and push to github  
+  # add summary and push to github
   2_nwis_pull/out/nwis_uv_summary.csv:
     command: summarize_nwis_data(
       data_ind = '2_nwis_pull/out/nwis_uv_data.rds.ind',

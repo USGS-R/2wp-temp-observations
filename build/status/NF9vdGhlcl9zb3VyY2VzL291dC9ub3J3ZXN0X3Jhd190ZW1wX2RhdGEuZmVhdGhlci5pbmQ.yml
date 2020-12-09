@@ -1,0 +1,11 @@
+version: 0.3.0
+name: 4_other_sources/out/norwest_raw_temp_data.feather.ind
+type: file
+hash: 3982c3a543add20a67283568c7ba6a54
+time: 2020-10-08 15:34:24 UTC
+depends:
+  4_other_sources/out/norwest_raw_files.yml: 618169da329b82074c00aa894f770bbf
+fixed: ~
+code:
+  functions: {}
+

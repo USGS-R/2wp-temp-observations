@@ -1,0 +1,16 @@
+version: 0.3.0
+name: 5_data_munge/out/norwest_munged.rds.ind
+type: file
+hash: 9ff2384f08a0304174792b29882fcc49
+time: 2020-10-08 15:37:39 UTC
+depends:
+  4_other_sources/out/norwest_raw_site_data.rds.ind: 2f0e80b45810320d25011f2d039b6385
+  4_other_sources/out/norwest_raw_temp_data.feather.ind: 3982c3a543add20a67283568c7ba6a54
+  min_value: c96c32be843430ad3b4632edb49aee30
+  max_value: 8550904a2a45c13015a45b21ef719fb7
+fixed: 74220f5d6fcef8f200637d3e1ef17d1a
+code:
+  functions:
+    f_to_c: a61909ceabd1801b610840dc86315ffe
+    munge_norwest: 6adf731c846225e05c7d3af3adfcae5b
+

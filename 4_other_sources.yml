@@ -3,29 +3,65 @@ target_default: 4_other_sources
 packages:
   - dplyr
   - readr
+  - yaml
+  - stringr
+  - readxl
+  - sf
 
 sources:
   - 4_other_sources/src/get_ecosheds_data.R
+  - 4_other_sources/src/get_norwest_data.R
 
 targets:
   4_other_sources:
     depends:
       - 4_other_sources/out/ecosheds_summary.csv
-    
-  # Eco-SHEDS data  
+      - 4_other_sources/out/ecosheds_sites.rds.ind
+      - 4_other_sources/out/norwest_raw_site_data.rds.ind
+      - 4_other_sources/out/norwest_raw_temp_data.feather.ind
+
+  # Eco-SHEDS data
   # unzip values and metadata, merge, and write EcoSHEDS data
   # files sent by Jeff Walker on 6/22 - includes all public-facing EcoSHEDS daily data
 
-  4_other_sources/out/ecosheds_data.rds.ind:  
+  4_other_sources/out/ecosheds_data.rds.ind:
     command: unzip_merge_values(
       zip_ind = '4_other_sources/in/sheds-public-data-20200723.zip.ind',
       out_ind = target_name)
-      
+
   4_other_sources/out/ecosheds_sites.rds.ind:
     command: unzip_extract_sites(
       zip_ind = '4_other_sources/in/sheds-public-data-20200723.zip.ind',
       out_ind = target_name)
-      
+
   4_other_sources/out/ecosheds_summary.csv:
     command: summarize_ecosheds_data(
       data_ind = '4_other_sources/out/ecosheds_data.rds.ind', out_file = target_name)
+
+##############################
+## get NorWeST data ##########
+##############################
+
+  norwest_url:
+    command: c(I('https://www.fs.fed.us/rm/boise/AWAE/projects/NorWeST/StreamTemperatureDataSummaries.shtml'))
+
+  norwest_dl_filenames:
+    command: get_filenames(url = norwest_url)
+
+  # this returns hashes of the two indicator files
+  # created by the task file
+  4_other_sources/out/norwest_raw_files.yml:
+    command: do_data_file_tasks(
+      out_file = target_name,
+      files = norwest_dl_filenames,
+      download_base_url = I('https://www.fs.fed.us/rm/boise/AWAE/projects/NorWeST/downloads/ObservedStreamTemperatureMaps'),
+      '4_other_sources/src/get_norwest_data.R')
+
+  # pull out indicators explicity here, depend on norwest_raw_files.yml
+  4_other_sources/out/norwest_raw_site_data.rds.ind:
+    command: c()
+    depends: '4_other_sources/out/norwest_raw_files.yml'
+
+  4_other_sources/out/norwest_raw_temp_data.feather.ind:
+    command: c()
+    depends: '4_other_sources/out/norwest_raw_files.yml'

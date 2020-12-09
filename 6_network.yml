@@ -1,0 +1,135 @@
+#target_default: site_reach_mapping.rds
+
+packages:
+  - scipiper
+  - dplyr
+  - sf
+  - parallel
+  - nhdplusTools
+  - tidyr
+  - assertthat
+  
+sources:
+  - 6_network/src/get_network.R
+  - 6_network/src/match_sites_reaches.R
+  - 6_network/src/plot_tasks.R
+  - 6_network/src/visuals.R
+
+
+  
+targets:
+
+  6_all_plots:
+    depends:
+       - 6_network/out/most_sites_reaches_plots.zip.ind
+       - 6_network/out/longest_reaches_plots.zip.ind
+       - 6_network/out/shortest_reaches_plots.zip.ind
+       - 6_network/out/random_site_reaches_plots.zip.ind
+       - 6_network/out/order_one_reaches_plots.zip.ind
+       - 6_network/out/site_reach_distances.png.ind
+       - 6_network/out/sites_per_reach.png.ind
+       - 6_network/out/site_distance_vs_reach_length.png.ind
+
+      
+
+  # download and indicate the national geospatial fabric.
+  # comes from ScienceBase: https://www.sciencebase.gov/catalog/item/5e29d1a0e4b0a79317cf7f63
+  #may need permission
+  6_network/in/GFv1.1.gdb.ind:
+    command: get_national_gf(
+      out_ind=target_name,
+      sb_id = I('5e29d1a0e4b0a79317cf7f63'),
+      sb_name = I('GFv1.1.gdb.zip'))
+
+  # refine the GF network to have reach breaks at every reach intersection, etc.
+  6_network/out/reach_endpoints.rds.ind:
+    command: find_endpoints(
+      out_ind = target_name,
+      national_network = I('6_network/in/GFv1.1.gdb'))
+  6_network/out/reach_endpoints.rds:
+    command: gd_get('6_network/out/reach_endpoints.rds.ind')
+  
+  6_network/out/reach_direction.rds.ind:
+    command: compute_up_down_stream_endpoints(
+      out_ind = target_name,
+      reaches_bounded_ind = '6_network/out/reach_endpoints.rds.ind')
+  6_network/out/reach_direction.rds:
+    command: gd_get('6_network/out/reach_direction.rds.ind')
+    
+  6_network/out/site_flowlines.rds.ind:
+    command: get_site_flowlines(
+      outind = target_name,
+      reaches_direction_ind = '6_network/out/reach_direction.rds.ind',
+      sites_ind = '5_data_munge/out/all_sites.rds.ind', 
+      search_radius = 500) 
+  6_network/out/site_flowlines.rds:
+    command: gd_get('6_network/out/site_flowlines.rds.ind')
+
+  reaches_direction_latlon:
+    command: transform_network_file('6_network/out/reach_direction.rds.ind',
+                                    crs = I(4326))
+
+  #from the set of reaches that were matched with sites, generate graphics
+  #for a random subset, plus focus on edge cases:
+  # longest/shortest reaches, most sites, network density?  low stream order?
+  #summary metrics?
+  reaches_to_check:
+    command: sample_reaches(matched_sites_ind = '6_network/out/site_flowlines.rds.ind',
+                            full_network = reaches_direction_latlon)
+
+
+  ##### visuals ######
+  # gd_get these indicator files to grab the files from drive
+  6_network/out/longest_reaches_plots.zip.ind:
+    command: make_site_reach_plots(outind = target_name,
+                                   reaches_to_check = reaches_to_check,
+                                   network_latlon = reaches_direction_latlon,
+                                   category = I('longest_reaches'),
+                                   '6_network/src/plot_tasks.R',
+                                   '6_network/src/match_sites_reaches.R')
+
+  6_network/out/shortest_reaches_plots.zip.ind:
+    command: make_site_reach_plots(outind = target_name,
+                                   reaches_to_check = reaches_to_check,
+                                   network_latlon = reaches_direction_latlon,
+                                   category = I('shortest_reaches'),
+                                   '6_network/src/plot_tasks.R',
+                                   '6_network/src/match_sites_reaches.R')
+
+  6_network/out/most_sites_reaches_plots.zip.ind:
+    command: make_site_reach_plots(outind = target_name,
+                                   reaches_to_check = reaches_to_check,
+                                   network_latlon = reaches_direction_latlon,
+                                   category = I('most_sites_reaches'),
+                                   '6_network/src/plot_tasks.R',
+                                   '6_network/src/match_sites_reaches.R')
+
+  6_network/out/random_site_reaches_plots.zip.ind:
+    command: make_site_reach_plots(outind = target_name,
+                                   reaches_to_check = reaches_to_check,
+                                   network_latlon = reaches_direction_latlon,
+                                   category = I('random_site_reaches'),
+                                   '6_network/src/plot_tasks.R',
+                                   '6_network/src/match_sites_reaches.R')
+
+
+
+  6_network/out/site_reach_distances.png.ind:
+    command: site_reach_distance_plot(target_name,
+                                      sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')
+
+  6_network/out/sites_per_reach.png.ind:
+    command: sites_per_reach_plot(target_name,
+                                      sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')
+
+  6_network/out/site_distance_vs_reach_length.png.ind:
+    command: distance_vs_reach_length_plot(target_name, 
+                                          sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')
+                                          
+  6_network/out/order_one_reaches_plots.zip.ind:
+    command: make_site_reach_plots(outind = target_name,
+                                   reaches_to_check = reaches_to_check,
+                                   network_latlon = reaches_direction_latlon,
+                                   category = I('order_one_reaches'),
+                                   '6_network/src/plot_tasks.R',
+                                   '6_network/src/match_sites_reaches.R')
