@@ -36,23 +36,11 @@ targets:
     command: c(I(c('Stream', 'Spring')))
   
   #declaring doy, long, and lat bins values.  
-  doy_lim:
-    command: I(6)
+  doy_lim =  I(6)
     
-  long_deg:
-    command: I(1)
+  long_deg = I(1)
     
-  lat_deg:
-    command: I(1)
-    
-  yard_stick:
-    command: I(5) 
-    
-  lb:
-    command: I(10)  # lower bound
-    
-  ub:
-    command: I(15)  # upper bound  
+  lat_deg =  I(1)
     
   # first, limit to stream data
   5_data_munge/out/wqp_data_streams.rds.ind:
@@ -115,6 +103,7 @@ targets:
     command: qaqc_daily_temp_site_data(
       temp_in_ind = '5_data_munge/out/daily_temperatures.rds.ind', 
       site_in_ind = '5_data_munge/out/all_sites.rds.ind',
+      doy_lim =  I(6), long_deg = I(1), lat_deg =  I(1),
       out_ind = target_name)
       
   5_data_munge/out/flagged_temperature_data.csv:
