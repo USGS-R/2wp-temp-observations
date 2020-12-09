@@ -87,6 +87,10 @@ targets:
 
   5_data_munge/out/all_sites.rds:
     command: gd_get('5_data_munge/out/all_sites.rds.ind')
+    
+  # qaqc the daily temperature data.    
+  5_data_munge/out/daily_temperatures_qaqc.rds:
+    command: gd_get('5_data_munge/out/daily_temperatures_qaqc.rds.ind')
 
   5_data_munge/out/stream_sites_us.rds:
     command: gd_get('5_data_munge/out/stream_sites_us.rds.ind')
