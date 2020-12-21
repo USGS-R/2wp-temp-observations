@@ -93,7 +93,7 @@ munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
     mutate(DailyMean = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMean, f_to_c(DailyMean)),
            DailyMin = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMin, f_to_c(DailyMin)),
            DailyMax = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMax, f_to_c(DailyMax))) %>%
-    filter(DailyMean > 0 & DailyMean < 35)
+    filter(DailyMean > min_value & DailyMean < max_value)
 
   # select columns for output
   dat_out <- select(dat_out, -DailySD, -DailyRange, -SampleYear, -UOM, -site_meta, -year) %>%
