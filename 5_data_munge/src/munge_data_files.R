@@ -11,9 +11,11 @@ munge_nwis <- function(dv_ind, uv_ind, min_value, max_value, out_ind) {
   uv <- readRDS(sc_retrieve(uv_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'nwis_uv')
 
+  # keeping provisional data for now
+  # need to keep rows where mean is NA because sometimes still min/max values
   nwis <- bind_rows(dv, uv) %>%
-    filter(grepl('A', cd_value, ignore.case = FALSE)) %>%
-    filter(temp_value > min_value & temp_value < max_value)
+    #filter(grepl('A', cd_value, ignore.case = FALSE)) %>%
+    filter(Mean_temperature > min_value & Mean_temperature < max_value|is.na(Mean_temperature))
 
   # save
   data_file <- scipiper::as_data_file(out_ind)
@@ -54,10 +56,12 @@ munge_ecosheds <- function(in_ind, min_value, max_value, out_ind) {
 munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
 
   dat <- feather::read_feather(sc_retrieve(dat_ind, 'getters.yml'))
+
   sites <- readRDS(sc_retrieve(sites_ind, 'getters.yml')) %>%
     sf::st_drop_geometry() %>%
     mutate(site_meta = TRUE) %>%
     select(OBSPRED_ID, Source, UOM, region, site_meta) %>% distinct()
+
   dat_out <-  dat %>%
     mutate(NorWeST_ID = ifelse(is.na(NorWeST_ID), NoRWeST_ID, NorWeST_ID),
            DailySD = ifelse(is.na(DailySD), DAILYSD, DailySD)) %>%
@@ -65,7 +69,7 @@ munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
     select(-NoRWeST_ID, -NorWest_ID, -DAILYSD) %>%
     left_join(sites, by = c('region', 'OBSPRED_ID')) %>%
     filter(!grepl('nwis', Source, ignore.case = TRUE)) %>% # assume we picked these up in our own NWIS call
-    filter(!is.na(DailyMean)) %>%
+    filter(!is.na(DailyMean)|!is.na(DailyMin)|!is.na(DailyMax)) %>%
     filter(!is.na(site_meta)) # there were 32 sites from the "OregonCoast" files that did not have metadata
 
   # handle units
@@ -93,7 +97,7 @@ munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
     mutate(DailyMean = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMean, f_to_c(DailyMean)),
            DailyMin = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMin, f_to_c(DailyMin)),
            DailyMax = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMax, f_to_c(DailyMax))) %>%
-    filter(DailyMean > min_value & DailyMean < max_value)
+    filter(DailyMean > min_value & DailyMean < max_value|is.na(DailyMean))
 
   # select columns for output
   dat_out <- select(dat_out, -DailySD, -DailyRange, -SampleYear, -UOM, -site_meta, -year) %>%
@@ -110,25 +114,29 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
     mutate(date = as.Date(ActivityStartDate), source = 'wqp') %>%
     select(site_id = MonitoringLocationIdentifier,
            date,
-           temp_degC = temperature_mean_daily,
-           n_obs = n_day, source)
+           mean_temp_degC = temperature_mean_daily,
+           min_temp_degC = temperature_min_daily,
+           max_temp_degC = temperature_max_daily,
+           n_obs, source)
 
   nwis <- readRDS(sc_retrieve(nwis_ind, remake_file = 'getters.yml')) %>%
     mutate(site_id = paste0('USGS-', site_no)) %>%
-    select(site_id, date = Date, temp_degC = temp_value, n_obs = n, source)
+    select(site_id, date = Date, mean_temp_degC = Mean_temperature,
+           min_temp_degC = Min_temperature, max_temp_degC = Max_temperature, n_obs, source)
 
   ecosheds <- readRDS(sc_retrieve(ecosheds_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'ecosheds',
            site_id = as.character(location_id)) %>%
-    select(site_id, date, temp_degC = mean, n_obs = n, source)
+    select(site_id, date, mean_temp_degC = mean, min_temp_degC = min, max_temp_degC = max, n_obs = n, source)
 
   norwest <- readRDS(sc_retrieve(norwest_ind, 'getters.yml')) %>%
     mutate(source = 'norwest',
            site_id = paste(region, OBSPRED_ID, sep = '_')) %>%
-    select(site_id, date = SampleDate, temp_degC = DailyMean, n_obs = Nobs, source)
+    select(site_id, date = SampleDate, mean_temp_degC = DailyMean,
+           min_temp_degC = DailyMin, max_temp_degC = DailyMax, n_obs = Nobs, source)
 
-  all_dat <- bind_rows(wqp, nwis, ecosheds, norwest) %>%
-    distinct(site_id, date, temp_degC, .keep_all = TRUE)
+  all_dat <- bind_rows(nwis, wqp, ecosheds, norwest) %>%
+    distinct(site_id, date, mean_temp_degC, min_temp_degC, max_temp_degC, .keep_all = TRUE)
 
   # save
   data_file <- scipiper::as_data_file(out_ind)
