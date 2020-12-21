@@ -76,9 +76,10 @@ combine_nwis_data <- function(ind_file, ...){
 
   for (i in seq_len(length(rds_files))){
 
+    message(paste0("Reading in and processing file ", rds_files[i]))
     temp_dat <- readRDS(rds_files[i])
 
-    if (grepl('uv_', final_targets)) {
+    if (grepl('_uv_', ind_file)) {
       reduced_dat <- choose_temp_column_uv(temp_dat)
     } else {
       reduced_dat <- choose_temp_column_dv(temp_dat)
@@ -162,11 +163,17 @@ choose_temp_column_dv <- function(temp_dat) {
     rename_if(grepl('Mean$|Min$|Max$', names(.)),
               list(~ sprintf('%s_temperature', .)))
 
+  # handle some edge cases
+  # one site had ` after the stat which led to new columns
+  names(rev_dat) <- gsub("`", "", names(rev_dat))
+  names(rev_dat) <- gsub("\\\\", "", names(rev_dat))
+
   dat_long <- pivot_longer(rev_dat,
                            cols = contains('Wtemp'),
                            names_to = c('location_info', '.value'),
                            names_pattern = '(.*Wtemp|.*Min|.*Max|.*Mean)_(.*)',
                            values_drop_na = TRUE) %>%
+    mutate(cd = ifelse(is.na(Mean_temperature), ifelse(is.na(Max_temperature), Min_cd, Max_cd), cd)) %>%
     select(-Min_cd, -Max_cd)
 
   # find which col_name has the most records for each site,
@@ -183,6 +190,13 @@ choose_temp_column_dv <- function(temp_dat) {
     slice(which.max(count_nu)) %>%
     ungroup() %>%
     select(-agency_cd, -count_nu)
+
+  if (!all(names(fixed_dups) %in%
+           c("site_no", "Date", "location_info", "Mean_temperature",
+             "Min_temperature", "Max_temperature", "cd"))) {
+    message("!!Some weird column naming convention is out-smarting your pattern matching!!")
+  }
+  fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
 
   return(fixed_dups)
 }
@@ -201,7 +215,7 @@ choose_temp_column_uv <- function(temp_dat) {
   dat_long <- pivot_longer(rev_dat,
                            cols = contains('Wtemp'),
                            names_to = c('location_info', '.value'),
-                           names_pattern = '(.*)_Wtemp_Inst_(.*)',
+                           names_pattern = '(.*Wtemp)_Inst_(.*)',
                            values_drop_na = TRUE) %>%
     group_by(site_no, Date, location_info) %>%
     summarize(Mean_temperature = mean(temperature, na.rm = TRUE),
@@ -225,5 +239,12 @@ choose_temp_column_uv <- function(temp_dat) {
     ungroup() %>%
     select(-count_nu)
 
+  if (!all(names(fixed_dups) %in%
+           c("site_no", "Date", "location_info", "Mean_temperature",
+             "Min_temperature", "Max_temperature", "n_obs", "cd"))) {
+    message("!!Some weird column naming convention is out-smarting your pattern matching!!")
+  }
+
+  fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
   return(fixed_dups)
 }
