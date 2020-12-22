@@ -201,8 +201,10 @@ clean_sites <- function(in_ind, out_ind) {
   #states_with_buffer <- st_buffer(states, dist = 1)
   # filter sites that are outside of the bounding box
   sites <- readRDS(sc_retrieve(in_ind, 'getters.yml')) %>%
+    distinct() %>%
     # filter to stream sites
     filter(site_type %in% c('ST', 'ST-TS', 'ST-CA','ST-DCH', 'Spring', 'Stream', 'stream', '')) %>%
+    filter(!is.na(longitude)|!is.na(latitude)) %>%
     st_as_sf(coords = c('longitude', 'latitude'), crs = 4326) %>% #create sf object
     st_transform(crs = proj_albers) %>%
     st_join(states, join = st_within) # match sites that are within state polygons
@@ -239,6 +241,7 @@ clean_sites <- function(in_ind, out_ind) {
     bind_rows(st_join(x = pot_lower, y = states, join = st_nearest_feature))
 
   # check sites that have no match
+  # these are ALL WQP sites
   # some of these are in Samoan Islands, some appear to have the wrong longitude (high positive numbers)
   # e.g., site 	21FLCOSP_WQX-45-03, if I turn the longitude to a negative value, lands in a stream in Florida
   # just ignoring these for now

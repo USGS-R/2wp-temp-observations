@@ -107,6 +107,7 @@ targets:
       in_ind = '5_data_munge/out/daily_temperatures.rds.ind',
       out_file = target_name)
 
+  # filter to sites left in teh stream_sites_us file
   # qaqc the daily temperature data.
   5_data_munge/out/daily_temperatures_qaqc.rds.ind:
     command: qaqc_daily_temp_site_data(
