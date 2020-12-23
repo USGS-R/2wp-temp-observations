@@ -1,13 +1,13 @@
 version: 0.3.0
 name: 6_network/out/reach_direction.rds.ind
 type: file
-hash: 2ee516b500dea725d7c88715899671aa
-time: 2020-08-05 01:02:54 UTC
+hash: bbf49b3fa6f5b18733ae39b89c677a84
+time: 2020-12-22 15:25:17 UTC
 depends:
   6_network/out/reach_endpoints.rds.ind: d6f0c875ba797f74a35afcb30cd62704
 fixed: c4782669959703f41d0b42bcfa6825f2
 code:
   functions:
-    compute_up_down_stream_endpoints: ec646e9f3d597fd9d3c8618483e02b65
+    compute_up_down_stream_endpoints: d73c39609826260a3186a592a15512b3
     get_reach_direction: e42b333b4e73d591f81a6e54f8412f29
 

@@ -1,12 +1,12 @@
 version: 0.3.0
 name: 5_data_munge/out/stream_sites_us.rds.ind
 type: file
-hash: 07e7dbfc75dd727374f22cdebb64308c
-time: 2020-12-22 13:52:22 UTC
+hash: f732c86cbaa2f8e94d3b5ece462e9b74
+time: 2020-12-22 15:39:20 UTC
 depends:
   5_data_munge/out/all_sites.rds.ind: de5c2102a9c89dd5ea1e2a01fb0ba780
 fixed: 81f96ba273c6047211c7d1908bad09fa
 code:
   functions:
-    clean_sites: 1e3f2dda85b1f452248e5b0c6088d973
+    clean_sites: 94898d0ea4d9e6bad62e95a3fac26681
 
