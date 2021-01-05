@@ -113,7 +113,7 @@ targets:
     command: qaqc_daily_temp_site_data(
       out_ind = target_name,
       temp_in_ind = '5_data_munge/out/daily_temperatures.rds.ind',
-      site_in_ind = '5_data_munge/out/all_sites.rds.ind',
+      site_in_ind = '5_data_munge/out/stream_sites_us.rds.ind',
       doy_lim =  I(6), long_deg = I(1), lat_deg =  I(1))
 
   5_data_munge/out/flagged_temperature_data.csv:
@@ -121,9 +121,12 @@ targets:
       in_ind = '5_data_munge/out/daily_temperatures_qaqc.rds.ind',
       out_file = target_name)
 
-  5_data_munge/out/binned_daily_temperatures_qaqc_summary.csv:
-    command: summary_qaqc_daily_temp_site(
-      '5_data_munge/out/daily_temperatures_qaqc.rds.ind',
-      out_file = target_name)
+  # I removed the bin columns so this function no longer works
+  # leaving commented out in case we want to revert.
+
+  #5_data_munge/out/binned_daily_temperatures_qaqc_summary.csv:
+   # command: summary_qaqc_daily_temp_site(
+    #  '5_data_munge/out/daily_temperatures_qaqc.rds.ind',
+     # out_file = target_name)
 
 
