@@ -86,7 +86,7 @@ check_upstream_reach <- function(matched_seg_id, down_up_ratio, reaches_directio
 
 sample_reaches <- function(matched_sites_ind, full_network) {
 
-  matched_sites <- readRDS(sc_retrieve(matched_sites_ind, remake_file = "6_network.yml"))
+  matched_sites <- readRDS(sc_retrieve(matched_sites_ind, remake_file = "getters.yml"))
 
   random_site_reaches_seg_ids <- matched_sites %>% select(seg_id_reassign) %>%
     distinct() %>% slice_sample(n = 100) %>% pull(seg_id_reassign)
@@ -113,7 +113,7 @@ sample_reaches <- function(matched_sites_ind, full_network) {
 }
 
 transform_network_file <- function(network_ind, crs) {
-  network <- readRDS(sc_retrieve(network_ind, remake_file = "6_network.yml"))
+  network <- readRDS(sc_retrieve(network_ind, remake_file = "getters.yml"))
   network$Shape <- st_transform(network$Shape, crs)
   return(network)
 }

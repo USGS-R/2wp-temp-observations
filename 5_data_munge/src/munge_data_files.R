@@ -250,8 +250,8 @@ clean_sites <- function(in_ind, out_ind) {
   sites_fixed <- filter(sites, !is.na(ID)) %>%
     bind_rows(sites_fixed_ids) %>%
     st_transform(crs = 4326) %>%
-    mutate(latitude = sf::st_coordinates(.)[,1],
-           longitude = sf::st_coordinates(.)[,2])
+    mutate(longitude = sf::st_coordinates(.)[,1],
+           latitude = sf::st_coordinates(.)[,2])
 
   saveRDS(sites_fixed, as_data_file(out_ind))
   gd_put(out_ind)
