@@ -130,3 +130,25 @@ get_first_order_reaches <- function(reaches, full_network) {
     distinct() %>%
     pull(seg_id_reassign)
 }
+
+create_crosswalk <- function(out_ind, matched_ind, sites_ind) {
+  matched <- readRDS(sc_retrieve(matched_ind, 'getters.yml'))
+  sites <- readRDS(sc_retrieve(sites_ind, 'getters.yml')) %>%
+    mutate(id = 1:nrow(.))
+
+  # check out duplicated matches
+  matched_dups <- group_by(matched, id) %>%
+    mutate(n = n())
+
+  top <- filter(matched_dups, n == 4)
+  original <- filter(matched, seg_id_reassign %in% '31347') %>% distinct(Shape)
+  ggplot() +
+    geom_sf(data =top$Shape, aes(color = factor(top$seg_id_reassign))) +
+    geom_sf(data = top$Shape_site, color = 'red') +
+    geom_sf(data = original$Shape, color = 'black')
+  browser()
+
+  #crosswalk <- left_join(sites, )
+
+
+}
