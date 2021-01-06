@@ -28,10 +28,10 @@ plot_reach_and_matched_sites <- function(outfile, reach_and_sites, network_latlo
 
   offset <- (reach_bbox[['top']]-reach_bbox[['bottom']])/20
   # some troubleshooting
-  offset <- ifelse(reach_bbox[['top']]-reach_bbox[['bottom']] < 0.3, 0.08, offset)
-  scale_dist <- ifelse(unique(round(reach_and_sites$shape_length)) < 1000, 1, floor(unique(round(reach_and_sites$shape_length))/20000))
+  offset <- ifelse(reach_bbox[['top']]-reach_bbox[['bottom']] < 0.3, 0.09, offset)
+  scale_dist <- ceiling(unique(round(reach_and_sites$shape_length))/20000)
 
-  final_map <- ggmap(base_map) +
+  final_map1 <- ggmap(base_map) +
     geom_sf(data = reaches_clipped_latlon, inherit.aes = FALSE) +
     geom_sf(data=reach_latlon, inherit.aes = FALSE,
             color = "red") +
@@ -43,15 +43,24 @@ plot_reach_and_matched_sites <- function(outfile, reach_and_sites, network_latlo
          subtitle = sprintf("Matched reach length: %d m\nBlack square = reach outlet",
                             round(reach_and_sites$shape_length)),
          caption = paste('Rendered', Sys.time())) +
-    scalebar(data = reaches_clipped_latlon, location = "bottomright", dist = scale_dist,
-             dist_unit = "km", transform = TRUE,  model = 'WGS84',
-             anchor = c(y = reach_bbox[['bottom']] + offset, x = reach_bbox[['right']] - offset)) +
     north(data = reaches_clipped_latlon)
+
+  final_map <-
+  tryCatch(
+    {
+      final_map1 +
+      scalebar(data = reaches_clipped_latlon, location = "bottomright", dist = scale_dist,
+               dist_unit = "km", transform = TRUE,  model = 'WGS84',
+               anchor = c(y = reach_bbox[['bottom']] + offset, x = reach_bbox[['right']] - offset))
+      },
+    error = function(e) final_map1)
+
+
   ggsave(filename = outfile, plot = final_map, height = 10, width = 10)
 }
 
 site_reach_distance_plot <- function(outind, sites_reaches_ind) {
-  reaches_matched <- readRDS(sc_retrieve(sites_reaches_ind))
+  reaches_matched <- readRDS(sc_retrieve(sites_reaches_ind, 'getters.yml'))
   ggplot(data = reaches_matched, aes(x = offset)) +
     geom_histogram(binwidth = 10) +
     labs(title = "Distribution of site offsets from initially matched reach*",
@@ -63,7 +72,7 @@ site_reach_distance_plot <- function(outind, sites_reaches_ind) {
 }
 
 sites_per_reach_plot <- function(outind, sites_reaches_ind) {
-  reaches_matched <- readRDS(sc_retrieve(sites_reaches_ind))
+  reaches_matched <- readRDS(sc_retrieve(sites_reaches_ind, 'getters.yml'))
 
   sites_per_reach <- reaches_matched %>%
     group_by(seg_id_reassign) %>%
@@ -78,7 +87,7 @@ sites_per_reach_plot <- function(outind, sites_reaches_ind) {
 }
 
 distance_vs_reach_length_plot <- function(outind, sites_reaches_ind) {
-  reaches_matched <- readRDS(sc_retrieve(sites_reaches_ind))
+  reaches_matched <- readRDS(sc_retrieve(sites_reaches_ind, 'getters.yml'))
   sites_distances_long <- reaches_matched %>%
     select(shape_length, site_upstream_distance, site_downstream_distance) %>%
     pivot_longer(cols = contains('distance'), names_to = 'measure',
