@@ -1,11 +1,11 @@
 version: 0.3.0
 name: 5_data_munge/out/all_sites.rds.ind
 type: file
-hash: 2eb531dfedc7c657c836bb8318cae4cd
-time: 2020-10-08 16:32:20 UTC
+hash: de5c2102a9c89dd5ea1e2a01fb0ba780
+time: 2020-12-21 22:36:14 UTC
 depends:
-  2_nwis_pull/inout/nwis_dv_inventory.feather.ind: 414fe10d845df80335d9a57ab0426b5c
-  2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind: bcda844e1aa0d8c9f0aee673cef4ca15
+  2_nwis_pull/inout/nwis_dv_inventory.feather.ind: d35e9d21dcf64b1203ddfcca29384d28
+  2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind: dd4e949cb586e598449e1ff4a3220727
   4_other_sources/out/ecosheds_sites.rds.ind: ac5e1c8c66de5d81df748931a52cba14
   1_wqp_pull/inout/wqp_inventory.feather.ind: fadf3bf3c179f5b48e58503abe0e12ad
   4_other_sources/out/norwest_raw_site_data.rds.ind: 2f0e80b45810320d25011f2d039b6385

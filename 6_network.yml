@@ -8,15 +8,16 @@ packages:
   - nhdplusTools
   - tidyr
   - assertthat
-  
+  - sbtools
+  - ggmap
+  - ggsn
+
 sources:
   - 6_network/src/get_network.R
   - 6_network/src/match_sites_reaches.R
   - 6_network/src/plot_tasks.R
   - 6_network/src/visuals.R
 
-
-  
 targets:
 
   6_all_plots:
@@ -29,8 +30,6 @@ targets:
        - 6_network/out/site_reach_distances.png.ind
        - 6_network/out/sites_per_reach.png.ind
        - 6_network/out/site_distance_vs_reach_length.png.ind
-
-      
 
   # download and indicate the national geospatial fabric.
   # comes from ScienceBase: https://www.sciencebase.gov/catalog/item/5e29d1a0e4b0a79317cf7f63
@@ -46,24 +45,27 @@ targets:
     command: find_endpoints(
       out_ind = target_name,
       national_network = I('6_network/in/GFv1.1.gdb'))
-  6_network/out/reach_endpoints.rds:
-    command: gd_get('6_network/out/reach_endpoints.rds.ind')
-  
+
   6_network/out/reach_direction.rds.ind:
     command: compute_up_down_stream_endpoints(
       out_ind = target_name,
       reaches_bounded_ind = '6_network/out/reach_endpoints.rds.ind')
-  6_network/out/reach_direction.rds:
-    command: gd_get('6_network/out/reach_direction.rds.ind')
-    
+
   6_network/out/site_flowlines.rds.ind:
     command: get_site_flowlines(
       outind = target_name,
       reaches_direction_ind = '6_network/out/reach_direction.rds.ind',
-      sites_ind = '5_data_munge/out/all_sites.rds.ind', 
-      search_radius = 500) 
-  6_network/out/site_flowlines.rds:
-    command: gd_get('6_network/out/site_flowlines.rds.ind')
+      sites_ind = '5_data_munge/out/stream_sites_us.rds.ind',
+      search_radius = 500)
+
+  #6_network/out/site_stream_crosswalk.rds.ind:
+   # command: create_crosswalk(
+    #  out_ind = target_name,
+     # matched_ind = '6_network/out/site_flowlines.rds.ind',
+      #sites_ind = '5_data_munge/out/stream_sites_us.rds.ind')
+
+  #6_network/out/stream_site_crosswalk.rds.ind:
+   # command: add_segment_info()
 
   reaches_direction_latlon:
     command: transform_network_file('6_network/out/reach_direction.rds.ind',
@@ -123,9 +125,9 @@ targets:
                                       sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')
 
   6_network/out/site_distance_vs_reach_length.png.ind:
-    command: distance_vs_reach_length_plot(target_name, 
+    command: distance_vs_reach_length_plot(target_name,
                                           sites_reaches_ind = '6_network/out/site_flowlines.rds.ind')
-                                          
+
   6_network/out/order_one_reaches_plots.zip.ind:
     command: make_site_reach_plots(outind = target_name,
                                    reaches_to_check = reaches_to_check,

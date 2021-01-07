@@ -5,8 +5,8 @@ packages:
   - dplyr
   - tidyverse
   - maps
-  - sf  
-  
+  - sf
+
 sources:
   - 5_data_munge/src/munge_data_files.R
   - 5_data_munge/src/munge_wqp_files.R
@@ -19,8 +19,7 @@ targets:
       - 5_data_munge/out/daily_temperatures_summary.csv
       - 5_data_munge/out/all_sites.rds.ind
       - 5_data_munge/out/daily_temperatures_qaqc.rds.ind
-      - 5_data_munge/out/flagged_temperature_data.csv
-      - 5_data_munge/out/binned_daily_temperatures_qaqc_summary.csv
+      - 5_data_munge/out/flagged_temperature_summary.csv
 
 # -- For WQP and NWISuv, first do a coarse QA, then reduce to daily  -- #
 # -- For NWISdv, do the coarse QA  -- #
@@ -106,21 +105,27 @@ targets:
     command: summarize_all_dat(
       in_ind = '5_data_munge/out/daily_temperatures.rds.ind',
       out_file = target_name)
-  
-  # qaqc the daily temperature data.    
+
+  # filter to sites left in teh stream_sites_us file
+  # qaqc the daily temperature data.
   5_data_munge/out/daily_temperatures_qaqc.rds.ind:
     command: qaqc_daily_temp_site_data(
-      temp_in_ind = '5_data_munge/out/daily_temperatures.rds.ind', 
-      site_in_ind = '5_data_munge/out/all_sites.rds.ind',
-      doy_lim =  I(6), long_deg = I(1), lat_deg =  I(1),
-      out_ind = target_name)
-      
-  5_data_munge/out/flagged_temperature_data.csv:
-    command: outliers_summary(in_ind = '5_data_munge/out/daily_temperatures_qaqc.rds.ind',
+      out_ind = target_name,
+      temp_in_ind = '5_data_munge/out/daily_temperatures.rds.ind',
+      site_in_ind = '5_data_munge/out/stream_sites_us.rds.ind',
+      doy_lim =  I(6), long_deg = I(1), lat_deg =  I(1))
+
+  5_data_munge/out/flagged_temperature_summary.csv:
+    command: outliers_summary(
+      in_ind = '5_data_munge/out/daily_temperatures_qaqc.rds.ind',
       out_file = target_name)
-      
-  5_data_munge/out/binned_daily_temperatures_qaqc_summary.csv:
-    command: summary_qaqc_daily_temp_site('5_data_munge/out/daily_temperatures_qaqc.rds.ind',
-      out_file = target_name)
-      
-      
+
+  # I removed the bin columns so this function no longer works
+  # leaving commented out in case we want to revert.
+
+  #5_data_munge/out/binned_daily_temperatures_qaqc_summary.csv:
+   # command: summary_qaqc_daily_temp_site(
+    #  '5_data_munge/out/daily_temperatures_qaqc.rds.ind',
+     # out_file = target_name)
+
+
