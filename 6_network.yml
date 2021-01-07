@@ -40,17 +40,19 @@ targets:
       sb_id = I('5e29d1a0e4b0a79317cf7f63'),
       sb_name = I('GFv1.1.gdb.zip'))
 
-  # refine the GF network to have reach breaks at every reach intersection, etc.
+  #pull out endpoints of each reach
   6_network/out/reach_endpoints.rds.ind:
     command: find_endpoints(
       out_ind = target_name,
       national_network = I('6_network/in/GFv1.1.gdb'))
 
+  #determine up/downstream endpoints
   6_network/out/reach_direction.rds.ind:
     command: compute_up_down_stream_endpoints(
       out_ind = target_name,
       reaches_bounded_ind = '6_network/out/reach_endpoints.rds.ind')
 
+  #match sites with flowlines
   6_network/out/site_flowlines.rds.ind:
     command: get_site_flowlines(
       outind = target_name,
