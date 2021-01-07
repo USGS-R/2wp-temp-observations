@@ -52,14 +52,19 @@ get_site_flowlines <- function(outind, reaches_direction_ind, sites_ind, search_
     #moved upstream
     left_join(reaches_direction, by = c(seg_id_reassign = 'seg_id'))
 
+  #make sure each site is matched to only one reach
+  assert_that(class(sites_move_upstream$seg_id_reassign) == 'integer')
+  assert_that(length(unique(sites_move_upstream$id)) == nrow(sites_move_upstream),
+              msg = 'There are repeated site IDs in the site-reach matches')
+  assert_that(sum(is.na(sites_move_upstream$seg_id_reassign)) == 0,
+              msg = 'There are NAs in the matched reach column')
   saveRDS(sites_move_upstream, file = as_data_file(outind))
   message("uploading...")
   gd_put(outind)
 }
 
 
-#' get upstream reach: if multiple, return both if down_up_ratio > 4;
-#' else if down_up_ratio < 4, return same seg_id
+#' get upstream reach: if multiple, return original match;
 #' if only one upstream reach, return it
 #'
 #' Expects only reaches where up_down_ratio > 1
@@ -71,16 +76,10 @@ check_upstream_reach <- function(matched_seg_id, down_up_ratio, reaches_directio
 
   upstream_reaches <- filter(reaches_direction, to_seg == matched_seg_id)
 
-  if(nrow(upstream_reaches) > 1) { #upstream point is a confluence
-    if(down_up_ratio > 4) {
-      return(list(upstream_reaches$seg_id))
-    } else {
+  if(nrow(upstream_reaches) > 1 | nrow(upstream_reaches) == 0) { #upstream point is a confluence or source
       return(list(matched_seg_id))
-    }
   } else if(nrow(upstream_reaches) == 1){
     return(list(upstream_reaches$seg_id))
-  } else { #a source reach, nothing upstream
-    return(list(matched_seg_id))
   }
 }
 
