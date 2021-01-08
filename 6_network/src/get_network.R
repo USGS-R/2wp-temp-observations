@@ -60,7 +60,7 @@ find_endpoints <- function(national_network, out_ind) {
   }
   gf_applied <- parLapply(cl, X = gf_reaches_split, fun = add_endpoints)
   stopCluster(cl)
-  gf_reaches_endpoints <- do.call(bind_rows, gf_applied)
+  gf_reaches_endpoints <- bind_rows(gf_applied)
   saveRDS(gf_reaches_endpoints, file = as_data_file(out_ind))
   gd_put(out_ind)
 }
@@ -101,7 +101,7 @@ compute_up_down_stream_endpoints <- function(reaches_bounded_ind, out_ind) {
   cluster_results <- parLapply(cl = cl, X = seg_ids_split,
                                fun = get_reach_direction, reaches_bounded)
   stopCluster(cl)
-  results_bound <- do.call(bind_rows, cluster_results)
+  results_bound <- bind_rows(cluster_results)
 
   shape_crs <- st_crs(results_bound$Shape)
   reaches_direction <- results_bound %>%
