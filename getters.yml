@@ -102,3 +102,5 @@ targets:
     command: gd_get('6_network/out/reach_direction.rds.ind')
   6_network/out/site_flowlines.rds:
     command: gd_get('6_network/out/site_flowlines.rds.ind')
+  6_network/out/site_stream_crosswalk.rds:
+    command: gd_get('6_network/out/site_stream_crosswalk.rds.ind')

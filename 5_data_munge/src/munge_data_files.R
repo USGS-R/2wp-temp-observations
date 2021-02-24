@@ -15,7 +15,9 @@ munge_nwis <- function(dv_ind, uv_ind, min_value, max_value, out_ind) {
   # need to keep rows where mean is NA because sometimes still min/max values
   nwis <- bind_rows(dv, uv) %>%
     #filter(grepl('A', cd_value, ignore.case = FALSE)) %>%
-    filter(Mean_temperature > min_value & Mean_temperature < max_value|is.na(Mean_temperature))
+    filter(Mean_temperature > min_value & Mean_temperature < max_value|is.na(Mean_temperature),
+           Max_temperature > min_value & Max_temperature < max_value|is.na(Max_temperature),
+           Min_temperature > min_value & Min_temperature < max_value|is.na(Min_temperature))
 
   # save
   data_file <- scipiper::as_data_file(out_ind)
@@ -32,14 +34,17 @@ munge_ecosheds <- function(in_ind, min_value, max_value, out_ind) {
 
   over_45 <- filter(dat, mean >= 45)
   high_series<- filter(dat, series_id %in% unique(over_45$series_id)) %>%
-    mutate(mean = f_to_c(mean))
+    mutate(mean = f_to_c(mean),
+           min = f_to_c(min),
+           max = f_to_c(max))
 
   # bind with "good" data
   # remove data above 35, below 0
   dat_out <- filter(dat, !series_id %in% unique(over_45$series_id)) %>%
     bind_rows(high_series) %>%
-    filter(mean > min_value,
-           mean < max_value)
+    filter(mean > min_value & mean < max_value) %>%
+    filter(min > min_value & min < max_value) %>%
+    filter(max > min_value & max < max_value)
 
   message(nrow(dat) - nrow(dat_out), ' temperature observations dropped because they were outside of 0-35 deg C.')
 
@@ -97,7 +102,9 @@ munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
     mutate(DailyMean = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMean, f_to_c(DailyMean)),
            DailyMin = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMin, f_to_c(DailyMin)),
            DailyMax = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMax, f_to_c(DailyMax))) %>%
-    filter(DailyMean > min_value & DailyMean < max_value|is.na(DailyMean))
+    filter(DailyMean > min_value & DailyMean < max_value|is.na(DailyMean),
+           DailyMin > min_value & DailyMin < max_value|is.na(DailyMin),
+           DailyMax > min_value & DailyMax < max_value|is.na(DailyMax))
 
   # select columns for output
   dat_out <- select(dat_out, -DailySD, -DailyRange, -SampleYear, -UOM, -site_meta, -year) %>%

@@ -1,0 +1,13 @@
+version: 0.3.0
+name: 6_network/out/site_stream_crosswalk.rds.ind
+type: file
+hash: c6e80a95776e198946b0882a0c50a8ad
+time: 2021-01-25 19:50:32 UTC
+depends:
+  6_network/out/site_flowlines.rds.ind: ae9258d33ff2597dc757bc6be24373af
+  5_data_munge/out/stream_sites_us.rds.ind: 9c3d9e2ea7f7c81238b4648584eac714
+fixed: c4bb3d1cfd994b4eda8cf860009af078
+code:
+  functions:
+    create_crosswalk: 362f975f915a640bafb33c704f0e3776
+

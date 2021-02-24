@@ -1,8 +1,8 @@
 version: 0.3.0
 name: 5_data_munge/out/nwis_daily.rds.ind
 type: file
-hash: 9a3fd9c696266daa111ab7f2aa7bdf27
-time: 2020-12-21 20:26:00 UTC
+hash: f98c7dc99d7850302af89c33db216e5d
+time: 2021-02-24 19:53:38 UTC
 depends:
   2_nwis_pull/out/nwis_dv_data.rds.ind: 9b6a7a199f93fbc54af327195c083871
   2_nwis_pull/out/nwis_uv_data.rds.ind: 6338f645c0c960f4a088507f6438c3b4
@@ -11,5 +11,5 @@ depends:
 fixed: fdb6438f5d47197469063715a78f7e8b
 code:
   functions:
-    munge_nwis: 5ae66db5ff20ed924c21b7a06f1c7b35
+    munge_nwis: da5fbf6e63684d668c607b53a7918a56
 

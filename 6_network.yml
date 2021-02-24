@@ -60,14 +60,11 @@ targets:
       sites_ind = '5_data_munge/out/stream_sites_us.rds.ind',
       search_radius = 500)
 
-  #6_network/out/site_stream_crosswalk.rds.ind:
-   # command: create_crosswalk(
-    #  out_ind = target_name,
-     # matched_ind = '6_network/out/site_flowlines.rds.ind',
-      #sites_ind = '5_data_munge/out/stream_sites_us.rds.ind')
-
-  #6_network/out/stream_site_crosswalk.rds.ind:
-   # command: add_segment_info()
+  6_network/out/site_stream_crosswalk.rds.ind:
+    command: create_crosswalk(
+      out_ind = target_name,
+      matched_ind = '6_network/out/site_flowlines.rds.ind',
+      sites_ind = '5_data_munge/out/stream_sites_us.rds.ind')
 
   reaches_direction_latlon:
     command: transform_network_file('6_network/out/reach_direction.rds.ind',
