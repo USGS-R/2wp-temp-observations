@@ -1,0 +1,104 @@
+target_default: none
+
+packages:
+  - scipiper
+
+
+targets:
+  none:
+    depends:
+
+  ######## 1_wqp_pull #########
+
+  1_wqp_pull/inout/wqp_inventory.feather:
+    command: gd_get('1_wqp_pull/inout/wqp_inventory.feather.ind')
+
+  1_wqp_pull/inout/wqp_pull_partitions.feather:
+    command: gd_get('1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
+
+  1_wqp_pull/out/wqp_data.rds:
+    command: gd_get('1_wqp_pull/out/wqp_data.rds.ind')
+
+  ######## 2_nwis_pull #########
+  2_nwis_pull/inout/nwis_dv_inventory.feather:
+    command: gd_get('2_nwis_pull/inout/nwis_dv_inventory.feather.ind')
+
+  2_nwis_pull/inout/nwis_uv_inventory.feather:
+    command: gd_get('2_nwis_pull/inout/nwis_uv_inventory.feather.ind')
+
+  2_nwis_pull/inout/nwis_compare_services.feather:
+    command: gd_get('2_nwis_pull/inout/nwis_compare_services.feather.ind')
+
+  2_nwis_pull/inout/nwis_uv_inventory_reduced.feather:
+    command: gd_get('2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind')
+
+  2_nwis_pull/inout/nwis_dv_partition.feather:
+    command: gd_get('2_nwis_pull/inout/nwis_dv_partition.feather.ind')
+
+  2_nwis_pull/inout/nwis_uv_partition.feather:
+    command: gd_get('2_nwis_pull/inout/nwis_uv_partition.feather.ind')
+
+  2_nwis_pull/out/nwis_dv_data.rds:
+    command: gd_get('2_nwis_pull/out/nwis_dv_data.rds.ind')
+
+  2_nwis_pull/out/nwis_uv_data.rds:
+    command: gd_get('2_nwis_pull/out/nwis_uv_data.rds.ind')
+
+  ######## 4_other_sources #########
+
+  # download and unzip ecosheds data
+  # created original indicator file with gd_confirm_posted('4_other_sources/in/sheds-public-data-20200622.zip.ind')
+  4_other_sources/in/sheds-public-data-20200723.zip:
+    command: gd_get('4_other_sources/in/sheds-public-data-20200723.zip.ind')
+
+  4_other_sources/out/ecosheds_data.rds:
+    command: gd_get('4_other_sources/out/ecosheds_data.rds.ind')
+
+  4_other_sources/out/ecosheds_sites.rds:
+    command: gd_get('4_other_sources/out/ecosheds_sites.rds.ind')
+
+  4_other_sources/out/norwest_raw_temp_data.feather:
+    command: gd_get('4_other_sources/out/norwest_raw_temp_data.feather.ind')
+
+  4_other_sources/out/norwest_raw_site_data.rds:
+    command: gd_get('4_other_sources/out/norwest_raw_site_data.rds.ind')
+
+  ######## 5_data_munge ###########
+  5_data_munge/out/wqp_data_streams.rds:
+    command: gd_get('5_data_munge/out/wqp_data_streams.rds.ind')
+
+  5_data_munge/out/ecosheds_munged.rds:
+    command: gd_get('5_data_munge/out/ecosheds_munged.rds.ind')
+
+  5_data_munge/out/norwest_munged.rds:
+    command: gd_get('5_data_munge/out/norwest_munged.rds.ind')
+
+  5_data_munge/out/wqp_daily_depths.rds:
+    command: gd_get('5_data_munge/out/wqp_daily_depths.rds.ind')
+
+  5_data_munge/out/wqp_daily_nodepths.rds:
+    command: gd_get('5_data_munge/out/wqp_daily_nodepths.rds.ind')
+
+  5_data_munge/out/nwis_daily.rds:
+    command: gd_get('5_data_munge/out/nwis_daily.rds.ind')
+
+  5_data_munge/out/daily_temperatures.rds:
+    command: gd_get('5_data_munge/out/daily_temperatures.rds.ind')
+
+  5_data_munge/out/all_sites.rds:
+    command: gd_get('5_data_munge/out/all_sites.rds.ind')
+
+  # qaqc the daily temperature data.
+  5_data_munge/out/daily_temperatures_qaqc.rds:
+    command: gd_get('5_data_munge/out/daily_temperatures_qaqc.rds.ind')
+
+  5_data_munge/out/stream_sites_us.rds:
+    command: gd_get('5_data_munge/out/stream_sites_us.rds.ind')
+
+  # 6_network
+  6_network/out/reach_endpoints.rds:
+    command: gd_get('6_network/out/reach_endpoints.rds.ind')
+  6_network/out/reach_direction.rds:
+    command: gd_get('6_network/out/reach_direction.rds.ind')
+  6_network/out/site_flowlines.rds:
+    command: gd_get('6_network/out/site_flowlines.rds.ind')

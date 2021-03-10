@@ -1,0 +1,11 @@
+version: 0.3.0
+name: 6_network/in/GeospatialFabric_National.gdb.ind
+type: file
+hash: d7094b7d2892658c83a97320db1b3240
+time: 2020-07-02 22:20:05 UTC
+depends: {}
+fixed: 43921a92132e880eaea24849a1e0ce46
+code:
+  functions:
+    get_national_gf: e8d9db43ee004616eec3106d9c1189da
+

@@ -1,10 +1,11 @@
 version: 0.3.0
 name: 2_nwis_pull/inout/nwis_dv_inventory.feather.ind
 type: file
-hash: 7ce770b5124fd9c9d9e947dfb9c8c07c
-time: 2020-01-28 15:18:15 UTC
+hash: d35e9d21dcf64b1203ddfcca29384d28
+time: 2020-12-16 13:47:50 UTC
 depends:
-  nwis_pull_parameters: 66f6e5244eaa5c902b135f2d2a23f1c9
+  nwis_pull_parameters: 6b3638cd4c2d2b5f9a67606053e9e271
+  nwis_dv_pull_date: a2879b5bc0380f4787fcf96d26531d70
 fixed: 9d698da59c8ce8b6b3fa4523906ea38d
 code:
   functions:

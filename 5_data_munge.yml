@@ -3,105 +3,128 @@ target_default: 5_data_munge
 packages:
   - scipiper
   - dplyr
+  - tidyverse
+  - maps
   - sf
-  - ggplot2
-  - rnaturalearth
-  - rnaturalearthhires
-  
+
 sources:
   - 5_data_munge/src/munge_data_files.R
-  
+  - 5_data_munge/src/munge_wqp_files.R
+  - 5_data_munge/src/qaqc_daily_data.R
+  - 5_data_munge/src/qaqc_groups_summaries.R
+
 targets:
   5_data_munge:
     depends:
-      - 5_data_munge/out/daily_temperatures.rds.ind
+      - 5_data_munge/out/daily_temperatures_summary.csv
       - 5_data_munge/out/all_sites.rds.ind
-    
+      - 5_data_munge/out/daily_temperatures_qaqc.rds.ind
+      - 5_data_munge/out/flagged_temperature_summary.csv
+
 # -- For WQP and NWISuv, first do a coarse QA, then reduce to daily  -- #
 # -- For NWISdv, do the coarse QA  -- #
 
   min_value:
     command: I(0)
-    
+
   max_value:
     command: I(35)
-    
+
   max_daily_range:
     command: I(30)
-    
-  # first, wqp data # 
+
+  stream_types:
+    command: c(I(c('Stream', 'Spring')))
+
+  # first, limit to stream data
+  5_data_munge/out/wqp_data_streams.rds.ind:
+    command: filter_site_types(
+      in_ind = '1_wqp_pull/out/wqp_data.rds.ind',
+      sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind',
+      keep_types = stream_types,
+      out_ind = target_name)
+
   5_data_munge/out/wqp_daily_depths.rds.ind:
     command: munge_wqp_withdepths(
-      in_ind = '1_wqp_pull/out/wqp_data.rds.ind',
-      min_value, max_value, max_daily_range, 
+      in_ind = '5_data_munge/out/wqp_data_streams.rds.ind',
+      min_value, max_value, max_daily_range,
       out_ind = target_name)
-   
-  5_data_munge/out/wqp_daily_depths.rds:
-    command: gd_get('5_data_munge/out/wqp_daily_depths.rds.ind')
-    
+
   5_data_munge/out/wqp_daily_nodepths.rds.ind:
     command: munge_wqp_withoutdepths(
-      in_ind = '1_wqp_pull/out/wqp_data.rds.ind',
-      min_value, max_value, max_daily_range, 
+      in_ind = '5_data_munge/out/wqp_data_streams.rds.ind',
+      min_value, max_value, max_daily_range,
       out_ind = target_name)
-   
-  5_data_munge/out/wqp_daily_nodepths.rds:
-    command: gd_get('5_data_munge/out/wqp_daily_nodepths.rds.ind')
-    
+
   # NWIS uv data #
-  5_data_munge/out/nwis_uv_daily.rds.ind:
-    command: munge_nwis_uv(
-      in_ind = '2_nwis_pull/out/nwis_uv_data.rds.ind',
-      min_value, max_value, max_daily_range, 
+  5_data_munge/out/nwis_daily.rds.ind:
+    command: munge_nwis(
+      dv_ind = '2_nwis_pull/out/nwis_dv_data.rds.ind',
+      uv_ind = '2_nwis_pull/out/nwis_uv_data.rds.ind',
+      min_value, max_value,
       out_ind = target_name)
-   
-  5_data_munge/out/nwis_uv_daily.rds:
-    command: gd_get('5_data_munge/out/nwis_uv_daily.rds.ind')
-    
-  # NWIS dv data #
-  5_data_munge/out/nwis_dv_daily.rds.ind:
-    command: munge_nwis_dv(
-      in_ind = '2_nwis_pull/out/nwis_dv_data.rds.ind',
-      min_value, max_value, max_daily_range, 
+
+  # EcoSHEDS data
+  5_data_munge/out/ecosheds_munged.rds.ind:
+    command: munge_ecosheds(
+      in_ind = '4_other_sources/out/ecosheds_data.rds.ind',
+      min_value, max_value,
       out_ind = target_name)
-   
-  5_data_munge/out/nwis_dv_daily.rds:
-    command: gd_get('5_data_munge/out/nwis_dv_daily.rds.ind')
-    
+
+  5_data_munge/out/norwest_munged.rds.ind:
+    command: munge_norwest(
+      sites_ind = '4_other_sources/out/norwest_raw_site_data.rds.ind',
+      dat_ind = '4_other_sources/out/norwest_raw_temp_data.feather.ind',
+      min_value, max_value, out_ind = target_name)
+
   # bring it all together
   5_data_munge/out/daily_temperatures.rds.ind:
     command: combine_all_dat(
-      nwis_dv_ind  = '5_data_munge/out/nwis_dv_daily.rds.ind',
-      nwis_uv_ind = '5_data_munge/out/nwis_uv_daily.rds.ind',
+      nwis_ind  = '5_data_munge/out/nwis_daily.rds.ind',
       wqp_ind = '5_data_munge/out/wqp_daily_nodepths.rds.ind',
+      ecosheds_ind = '5_data_munge/out/ecosheds_munged.rds.ind',
+      norwest_ind = '5_data_munge/out/norwest_munged.rds.ind',
       out_ind = target_name)
-      
-  5_data_munge/out/daily_temperatures.rds:
-    command: gd_get('5_data_munge/out/daily_temperatures.rds.ind')
-    
+
   5_data_munge/out/all_sites.rds.ind:
     command: combine_all_sites(
       out_ind = target_name,
       nwis_dv_sites_ind = '2_nwis_pull/inout/nwis_dv_inventory.feather.ind',
       nwis_uv_sites_ind = '2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind',
-      wqp_sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind')
-      
-  5_data_munge/out/all_sites.rds:
-    command: gd_get('5_data_munge/out/all_sites.rds.ind')
-    
-  5_data_munge/out/sites_shp/sites.shp.ind:
-    command: make_sites_shp(
+      ecosheds_sites_ind = '4_other_sources/out/ecosheds_sites.rds.ind',
+      wqp_sites_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind',
+      norwest_sites_ind = '4_other_sources/out/norwest_raw_site_data.rds.ind')
+
+  # clean up sites
+  # get rid of non-stream sites
+  # get rid of sites outside of US states/territories
+  5_data_munge/out/stream_sites_us.rds.ind:
+    command: clean_sites(in_ind = '5_data_munge/out/all_sites.rds.ind', out_ind = target_name)
+
+  5_data_munge/out/daily_temperatures_summary.csv:
+    command: summarize_all_dat(
+      in_ind = '5_data_munge/out/daily_temperatures.rds.ind',
+      out_file = target_name)
+
+  # filter to sites left in teh stream_sites_us file
+  # qaqc the daily temperature data.
+  5_data_munge/out/daily_temperatures_qaqc.rds.ind:
+    command: qaqc_daily_temp_site_data(
       out_ind = target_name,
-      all_sites_ind = '5_data_munge/out/all_sites.rds.ind',
-      all_temps_ind = '5_data_munge/out/daily_temperatures.rds.ind')
-  
-  5_data_munge/out/sites_shp/sites.shp:
-    command: gd_get('5_data_munge/out/sites_shp/sites.shp')
-      
-  5_data_munge/out/sites_ndates.png.ind:
-    command: plot_sites_ndates(
-      out_ind = target_name,
-      sites_shp_ind = '5_data_munge/out/sites_shp/sites.shp.ind')
-      
-  5_data_munge/out/sites_ndates.png:
-    command: gd_get('5_data_munge/out/sites_ndates.png.ind')
+      temp_in_ind = '5_data_munge/out/daily_temperatures.rds.ind',
+      site_in_ind = '5_data_munge/out/stream_sites_us.rds.ind',
+      doy_lim =  I(6), long_deg = I(1), lat_deg =  I(1))
+
+  5_data_munge/out/flagged_temperature_summary.csv:
+    command: outliers_summary(
+      in_ind = '5_data_munge/out/daily_temperatures_qaqc.rds.ind',
+      out_file = target_name)
+
+  # I removed the bin columns so this function no longer works
+  # leaving commented out in case we want to revert.
+
+  #5_data_munge/out/binned_daily_temperatures_qaqc_summary.csv:
+   # command: summary_qaqc_daily_temp_site(
+    #  '5_data_munge/out/daily_temperatures_qaqc.rds.ind',
+     # out_file = target_name)
+

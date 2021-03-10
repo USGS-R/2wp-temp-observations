@@ -1,14 +1,15 @@
 version: 0.3.0
 name: 1_wqp_pull/inout/wqp_pull_partitions.feather.ind
 type: file
-hash: 952142a2367540f72e08359cdf8b08b0
-time: 2020-01-08 16:37:06 UTC
+hash: 12a87b82c3d90bee280b0b8167a83e29
+time: 2020-07-24 16:27:15 UTC
 depends:
   wqp_pull_parameters: 61e80f749c74948bf95bb67cb07412b0
-  1_wqp_pull/inout/wqp_inventory.feather.ind: 25f8549426744ab16e779fee70c761c4
+  1_wqp_pull/inout/wqp_inventory.feather.ind: fadf3bf3c179f5b48e58503abe0e12ad
   wqp_partition_cfg: dc9f1a6787144e2e96aafb48b1ee67ce
+  wqp_pull_date: 1fbc5fcb5a023a50317972d9e65e1d54
 fixed: f1ee901bf2a86f4bac0c08cf4480a175
 code:
   functions:
-    partition_wqp_inventory: b9fab76a65793640fa18115442ea01c1
+    partition_wqp_inventory: 70d1ffc68d6179c10c49fa4994b1afa4
 

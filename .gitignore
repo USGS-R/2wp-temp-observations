@@ -10,6 +10,7 @@
 *.Feather
 *.Rdata
 .httr-oauth
+*.zip
 
 # remake
 .remake/
@@ -19,6 +20,8 @@
 
 # temporary folders
 1_wqp_pull/tmp/*
+4_other_sources/tmp/*
+
 
 # old folder that stores junk
 old/*
@@ -26,3 +29,12 @@ old/*
 # ignore geodb for national network
 # and delaware shape file
 8_delaware/in/*
+
+# qaqc summary datatable
+!5_data_munge/out/binned_daily_temperatures_qaqc_summary.csv
+!5_data_munge/out/flagged_temperature_data.csv
+
+6_network/in/*/*
+6_network/out/*.rds
+*.png
+*.zip

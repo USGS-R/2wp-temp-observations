@@ -1,0 +1,13 @@
+version: 0.3.0
+name: 6_network/out/reach_direction.rds.ind
+type: file
+hash: 2ee516b500dea725d7c88715899671aa
+time: 2021-01-08 00:21:00 UTC
+depends:
+  6_network/out/reach_endpoints.rds.ind: d6f0c875ba797f74a35afcb30cd62704
+fixed: c4782669959703f41d0b42bcfa6825f2
+code:
+  functions:
+    compute_up_down_stream_endpoints: a098d96233db5bdad808486d6163e707
+    get_reach_direction: e42b333b4e73d591f81a6e54f8412f29
+
