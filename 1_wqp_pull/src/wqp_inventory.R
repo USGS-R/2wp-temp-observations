@@ -15,9 +15,9 @@
 #'   one row per site/variable combination and the 'resultCount' being the
 #'   variable from which we will make decisions about partitioning data pull
 #'   requests.
-do_inventory_tasks <- function(states, final_target, ...) {
+do_inventory_tasks <- function(start_year, final_target, ...) {
 
-  task_name <- unique(states$state_id)
+  task_name <- start_year
 
   # define tasks
   download_step <- create_task_step(
@@ -26,7 +26,7 @@ do_inventory_tasks <- function(states, final_target, ...) {
       sprintf('%s_site_inventory', task_name)
     },
     command = function(task_name, ...) {
-      sprintf("inventory_wqp(state_id = I('%s'), wqp_pull_params = wqp_pull_parameters)", task_name)
+      sprintf("inventory_wqp(year_id = I('%s'), wqp_pull_params = wqp_pull_parameters)", task_name)
     }
   )
 
@@ -57,7 +57,7 @@ do_inventory_tasks <- function(states, final_target, ...) {
 
 }
 
-inventory_wqp <- function(state_id, wqp_pull_params) {
+inventory_wqp <- function(year_id, wqp_pull_params) {
 
   # function to keep track of time it takes to pull, and
   # number of rows in each return
@@ -75,25 +75,29 @@ inventory_wqp <- function(state_id, wqp_pull_params) {
   # collapse all constituents into single vector
   wqp_args$characteristicName <- as.character(unlist(wqp_args$characteristicName))
 
-  index = 1
-  year_list <- c(1899, seq(1978, 2020, by = 3))
-  for (year in 1: (length(year_list)-1)) {
-    start_date <- as.Date(paste(year_list[index] + 1, '01-01', sep = '-'))
-    index = index + 1
-    end_date <- as.Date(paste(year_list[index], '12-31', sep = '-'))
-    # set state ID
-    wqp_args$startDateLo <- start_date
-    wqp_args$startDateHi <- end_date
+
+    # set start-year and end-year.
+    wqp_args$startDateLo <- as.Date(paste(year_id, '01-01', sep = '-'))
+
+    # Setting a condition to check the srarting year.
+    # If the start year = 1900 then the end year will be 1979.
+    #
+    if (year_id == 1900) {
+      wqp_args$startDateHi <- as.Date('1977-12-31')
+    } else {
+      wqp_args$startDateHi <- as.Date(paste(year_id + 3, '12-31', sep = '-'))
+    }
+
 
     # Print state-specific message so user can see progress
-    #message('Retrieving whatWQPdata for state ', state_id)
+    message('Retrieving whatWQPdata for state ', year_id)
 
     # first try the full state pull, wrapped in try so function does not fail
     # with an error.
     temp_dat <- try(wqp_call(whatWQPdata, wqp_args[c('characteristicName',
                                                      'startDateLo', 'startDateHi')]))
 
-  }
+
 
 
   # catch errors, and break up data into two calls as a backup plan
