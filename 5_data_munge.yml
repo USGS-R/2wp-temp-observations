@@ -68,6 +68,7 @@ targets:
   5_data_munge/out/ecosheds_munged.rds.ind:
     command: munge_ecosheds(
       in_ind = '4_other_sources/out/ecosheds_data.rds.ind',
+      sites_ind = '4_other_sources/out/ecosheds_sites.rds.ind',
       min_value, max_value,
       out_ind = target_name)
 
@@ -84,7 +85,8 @@ targets:
       wqp_ind = '5_data_munge/out/wqp_daily_nodepths.rds.ind',
       ecosheds_ind = '5_data_munge/out/ecosheds_munged.rds.ind',
       norwest_ind = '5_data_munge/out/norwest_munged.rds.ind',
-      out_ind = target_name)
+      out_ind = target_name,
+      wqp_pull_date, nwis_dv_pull_date, nwis_uv_pull_date)
 
   5_data_munge/out/all_sites.rds.ind:
     command: combine_all_sites(
