@@ -9,56 +9,56 @@ packages:
   - scipiper
   - dplyr
   - xml2
-  
+
 sources:
   - 1_wqp_pull/src/wqp_inventory.R
   - 1_wqp_pull/src/wqp_pull.R
   - lib/src/require_local.R
-  
+
 targets:
   1_wqp_pull:
     depends:
       - 1_wqp_pull/out/wqp_data.rds.ind
-      
+
 # -- set pull date -- #
 # !! update pull date when you want to trigger a new inventory and pull
 # pull IDs will be generated with this date string YYYYMMDD
 
   wqp_pull_date:
-    command: c(I('20200723'))
-      
+    command: c(I('20200408'))
+
 # -- get a CONUS inventory of available data for download -- #
 
   wqp_pull_parameters:
     command: yaml.load_file('1_wqp_pull/cfg/wqp_pull_params.yml')
-    
+
   wqp_partition_cfg:
     command: yaml.load_file('1_wqp_pull/cfg/wqp_partition_config.yml')
-  
+
   # -- get inventory of observations available to download -- #
 
   # get inventory of samples available on WQP
   # only filters by characteristicNames, and pulls all at the same time
-  
-  states:
-    command: get_states(states_url = I('https://www.waterqualitydata.us/Codes/statecode?countrycode=US'))
-    
+
+  start_year:
+    command: c(I('1900', seq('1978', '2020', by = 3)))
+
   1_wqp_pull/inout/wqp_inventory.feather.ind:
     command: do_inventory_tasks(
-      states = states, 
+      start_year = start_year,
       final_target = target_name,
       '1_wqp_pull/src/wqp_inventory.R')
-    depends: 
+    depends:
       - wqp_pull_date
       - wqp_pull_parameters
-    
+
   # write a table that shows sites and records by state for each comparison
   # between PRs
   1_wqp_pull/inout/wqp_inventory_summary.csv:
     command: summarize_wqp_inventory(inv_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind', out_file = target_name)
 
   # make a plan for how to partition the inventory into separate data pulls.
-  
+
   1_wqp_pull/inout/wqp_pull_partitions.feather.ind:
     command: partition_wqp_inventory(
       partitions_ind = target_name,
@@ -66,16 +66,16 @@ targets:
       inventory_ind = '1_wqp_pull/inout/wqp_inventory.feather.ind',
       wqp_partition_cfg = wqp_partition_cfg,
       pull_date = wqp_pull_date)
-    
+
   # -- pull data! -- #
 
   # prepare a remake-style plan for running each state as a separate
   # remake target in a separate remake file (1_wqp_wqp_tasks.yml)
   wqp_pull_plan:
     command: plan_wqp_pull(partitions_ind='1_wqp_pull/inout/wqp_pull_partitions.feather.ind')
-  
+
   1_wqp_pull_tasks.yml:
-    command: create_wqp_pull_makefile(makefile = target_name, 
+    command: create_wqp_pull_makefile(makefile = target_name,
       task_plan = wqp_pull_plan,
       final_targets = I('1_wqp_pull/out/wqp_data.rds.ind'))
 
@@ -83,14 +83,13 @@ targets:
   1_wqp_pull/out/wqp_data.rds.ind:
     command: loop_wqp_tasks(
       ind_file=target_name,
-      task_plan=wqp_pull_plan, 
+      task_plan=wqp_pull_plan,
       task_makefile='1_wqp_pull_tasks.yml',
       num_tries=I(30), sleep_on_error=I(20))
     depends:
       - 1_wqp_pull/src/get_wqp_data.R
-    
+
   1_wqp_pull/out/wqp_data_summary.csv:
     command: summarize_wqp_data(
       data_ind = '1_wqp_pull/out/wqp_data.rds.ind',
       out_file = target_name)
-      
