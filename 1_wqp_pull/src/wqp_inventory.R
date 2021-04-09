@@ -1,4 +1,4 @@
-#' Create a task table to call whatWQPdata across all states
+#' Create a task table to call whatWQPdata from 1900 - 2020
 #'
 #' Depending on the size of the request, calls to WQP may need to be
 #' partitioned based on record size. This gets the inventory of data available
@@ -10,7 +10,7 @@
 #'
 #' @param start_year A year vector that includes the starting years.
 #' @param final_target Name of output from task table that contains the combined
-#' inventory from all states.
+#' inventory from all years.
 #' @return A dataframe returned by the function dataRetrieval::whatWQPdata, with
 #'   one row per site/variable combination and the 'resultCount' being the
 #'   variable from which we will make decisions about partitioning data pull
@@ -79,9 +79,9 @@ inventory_wqp <- function(year_id, wqp_pull_params) {
     # set start-year and end-year.
     wqp_args$startDateLo <- as.Date(paste(year_id, '01-01', sep = '-'))
 
-    # Setting a condition to check the srarting year.
-    # If the start year = 1900 then the end year will be 1979.
-    #
+    # Setting a condition to find the end-year by checking the start-year.
+    # If the start-year = 1900 then the end-year will be 1977.
+    # If the start year is after the year 1978 then the end-year = start-year + 2.
     if (year_id == 1900) {
       wqp_args$startDateHi <- as.Date('1977-12-31')
     } else {
