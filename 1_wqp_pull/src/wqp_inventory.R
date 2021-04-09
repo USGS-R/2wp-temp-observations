@@ -7,7 +7,7 @@
 #' partition calls to whatWQPdata by state, with an error catch that splits
 #' the pull in half (by counties) if it fails the first time.
 #'
-#' @param  start_year A year vector that includes the starting years.
+#' @param start_year A year vector that includes the starting years.
 #'  @param states A states dataframe that includes all states you want to pull,
 #' and the corresponding counties.
 #' @param final_target Name of output from task table that contains the combined
