@@ -4,12 +4,11 @@
 #' partitioned based on record size. This gets the inventory of data available
 #' on WQP that we need to fullfil our "needs" - which is a series of
 #' site/variable combinations. The national pull no longer works, so we
-#' partition calls to whatWQPdata by state, with an error catch that splits
-#' the pull in half (by counties) if it fails the first time.
+#' partition calls to whatWQPdata by years. First we pull the data from
+#' 1900 - 1978. Then, we pull the data after the year 1978 in three years
+#' partition.
 #'
 #' @param start_year A year vector that includes the starting years.
-#'  @param states A states dataframe that includes all states you want to pull,
-#' and the corresponding counties.
 #' @param final_target Name of output from task table that contains the combined
 #' inventory from all states.
 #' @return A dataframe returned by the function dataRetrieval::whatWQPdata, with
@@ -86,19 +85,18 @@ inventory_wqp <- function(year_id, wqp_pull_params) {
     if (year_id == 1900) {
       wqp_args$startDateHi <- as.Date('1977-12-31')
     } else {
-      wqp_args$startDateHi <- as.Date(paste(as.numeric(year_id) + 3, '12-31', sep = '-'))
+      wqp_args$startDateHi <- as.Date(paste(as.numeric(year_id) + 2, '12-31', sep = '-'))
     }
 
 
     # Print state-specific message so user can see progress
-    message('Retrieving whatWQPdata for state ', year_id)
+    message('Retrieving whatWQPdata for state ',
+            paste(wqp_args$startDateLo, wqp_args$startDateHi, sep = ' : '))
 
     # first try the full state pull, wrapped in try so function does not fail
     # with an error.
     temp_dat <- try(wqp_call(whatWQPdata, wqp_args[c('characteristicName',
                                                      'startDateLo', 'startDateHi')]))
-
-
 
 
   # catch errors, and break up data into two calls as a backup plan
@@ -163,6 +161,8 @@ summarize_wqp_inventory <- function(inv_ind, out_file) {
    wqp_inventory <- feather::read_feather(sc_retrieve(inv_ind, remake_file = 'getters.yml'))
 
    all <- data.frame(n_sites = nrow(wqp_inventory),
+                     #Sites will be represented in multiple rows,
+                     #we collapse and take the sum to get the sites record in one row.
                      n_records = sum(wqp_inventory$resultCount), stringsAsFactors = FALSE)
 
    readr::write_csv(all, out_file)
