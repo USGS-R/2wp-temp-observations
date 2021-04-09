@@ -25,7 +25,7 @@ targets:
 # pull IDs will be generated with this date string YYYYMMDD
 
   wqp_pull_date:
-    command: c(I('20200408'))
+    command: c(I('20210409'))
 
 # -- get a CONUS inventory of available data for download -- #
 
@@ -41,7 +41,7 @@ targets:
   # only filters by characteristicNames, and pulls all at the same time
 
   start_year:
-    command: c(I('1900', seq('1978', '2020', by = 3)))
+    command: c(I('1900'), I(seq('1978', '2020', by = 3)))
 
   1_wqp_pull/inout/wqp_inventory.feather.ind:
     command: do_inventory_tasks(
