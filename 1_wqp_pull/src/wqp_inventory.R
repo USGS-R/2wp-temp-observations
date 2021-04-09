@@ -86,7 +86,7 @@ inventory_wqp <- function(year_id, wqp_pull_params) {
     if (year_id == 1900) {
       wqp_args$startDateHi <- as.Date('1977-12-31')
     } else {
-      wqp_args$startDateHi <- as.Date(paste(as.numeric(year_id) + 2, '12-31', sep = '-'))
+      wqp_args$startDateHi <- as.Date(paste(as.numeric(year_id) + 3, '12-31', sep = '-'))
     }
 
 
