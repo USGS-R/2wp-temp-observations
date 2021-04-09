@@ -160,7 +160,7 @@ summarize_wqp_inventory <- function(inv_ind, out_file) {
 
    wqp_inventory <- feather::read_feather(sc_retrieve(inv_ind, remake_file = 'getters.yml'))
 
-   all <- data.frame(n_sites = nrow(wqp_inventory),
+   all <- data.frame(n_sites = length(unique(wqp_inventory$MonitoringLocationIdentifier)),
                      #Sites will be represented in multiple rows,
                      #we collapse and take the sum to get the sites record in one row.
                      n_records = sum(wqp_inventory$resultCount), stringsAsFactors = FALSE)
