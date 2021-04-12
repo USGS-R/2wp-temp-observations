@@ -135,7 +135,10 @@ combine_inventory <- function(ind_file, ...) {
   # take stock/map sites before pulling data
   dat_out <- dat_out %>%
     select(OrganizationIdentifier, MonitoringLocationIdentifier, ResolvedMonitoringLocationTypeName,
-           StateName, CountyName, HUCEightDigitCode, latitude = lat, longitude = lon, resultCount)
+           StateName, CountyName, HUCEightDigitCode, latitude = lat,
+           longitude = lon, resultCount) %>%
+    group_by(MonitoringLocationIdentifier) %>%
+    mutate(n_resultCount = sum(resultCount))
 
   # write and indicate the data file
   data_file <- scipiper::as_data_file(ind_file)
