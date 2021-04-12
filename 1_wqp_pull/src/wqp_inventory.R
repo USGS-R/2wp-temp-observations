@@ -144,13 +144,15 @@ combine_inventory <- function(ind_file, ...) {
            StateName, CountyName, HUCEightDigitCode, latitude = lat,
            longitude = lon, resultCount) %>%
     group_by(MonitoringLocationIdentifier) %>%
-    mutate(n_resultCount = sum(resultCount))
+    mutate(resultCount = sum(resultCount)) %>%
+    distinct(MonitoringLocationIdentifier)
 
   # write and indicate the data file
   data_file <- scipiper::as_data_file(ind_file)
   feather::write_feather(dat_out, data_file)
   gd_put(ind_file)
 }
+
 # get_states <- function(states_url) {
 #
 #   # get state and county codes
