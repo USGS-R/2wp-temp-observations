@@ -76,27 +76,33 @@ inventory_wqp <- function(year_id, wqp_pull_params) {
   wqp_args$characteristicName <- as.character(unlist(wqp_args$characteristicName))
 
 
-    # set start-year and end-year.
-    wqp_args$startDateLo <- as.Date(paste(year_id, '01-01', sep = '-'))
+  # set start-year and end-year.
+  wqp_args$startDateLo <- as.Date(paste(year_id, '01-01', sep = '-'))
 
-    # Setting a condition to find the end-year by checking the start-year.
-    # If the start-year = 1900 then the end-year will be 1977.
-    # If the start year is after the year 1978 then the end-year = start-year + 2.
-    if (year_id == 1900) {
-      wqp_args$startDateHi <- as.Date('1977-12-31')
-    } else {
-      wqp_args$startDateHi <- as.Date(paste(as.numeric(year_id) + 2, '12-31', sep = '-'))
-    }
+  # Setting a condition to find the end_year by checking the start_year.
+  # If the start year = 1900 then the end-year will be 1979.
+  # If the start year is between 1980 and 1997, then the end_year = start_year + 2,
+  # if the start year is between 1998 and 2003, then the end_year = start_year + 1,
+  # if the start year is after the year 2004 we pull the inventory for one year.
+  if (year_id == 1900) {
+    wqp_args$startDateHi <- as.Date('1979-12-31')
+  } else if (year_id >= 1980 & year_id <= 1997) {
+    wqp_args$startDateHi <- as.Date(paste(as.numeric(year_id) + 2, '12-31', sep = '-'))
+  }
+  else if (year_id >= 1998 & year_id <= 2003) {
+    wqp_args$startDateHi <- as.Date(paste(as.numeric(year_id) + 1, '12-31', sep = '-'))
+  } else {
+    wqp_args$startDateHi <- as.Date(paste(as.numeric(year_id), '12-31', sep = '-'))
+  }
 
+  # Print state-specific message so user can see progress
+  message('Retrieving whatWQPdata for state ',
+          paste(wqp_args$startDateLo, wqp_args$startDateHi, sep = ' : '))
 
-    # Print state-specific message so user can see progress
-    message('Retrieving whatWQPdata for state ',
-            paste(wqp_args$startDateLo, wqp_args$startDateHi, sep = ' : '))
-
-    # first try the full state pull, wrapped in try so function does not fail
-    # with an error.
-    temp_dat <- try(wqp_call(whatWQPdata, wqp_args[c('characteristicName',
-                                                     'startDateLo', 'startDateHi')]))
+  # first try the full state pull, wrapped in try so function does not fail
+  # with an error.
+  temp_dat <- try(wqp_call(whatWQPdata, wqp_args[c('characteristicName',
+                                                   'startDateLo', 'startDateHi')]))
 
 
   # catch errors, and break up data into two calls as a backup plan
@@ -161,14 +167,14 @@ combine_inventory <- function(ind_file, ...) {
 
 summarize_wqp_inventory <- function(inv_ind, out_file) {
 
-   wqp_inventory <- feather::read_feather(sc_retrieve(inv_ind, remake_file = 'getters.yml'))
+  wqp_inventory <- feather::read_feather(sc_retrieve(inv_ind, remake_file = 'getters.yml'))
 
-   all <- data.frame(n_sites = length(unique(wqp_inventory$MonitoringLocationIdentifier)),
-                     #Sites will be represented in multiple rows,
-                     #we collapse and take the sum to get the sites record in one row.
-                     n_records = sum(wqp_inventory$resultCount), stringsAsFactors = FALSE)
+  all <- data.frame(n_sites = length(unique(wqp_inventory$MonitoringLocationIdentifier)),
+                    #Sites will be represented in multiple rows,
+                    #we collapse and take the sum to get the sites record in one row.
+                    n_records = sum(wqp_inventory$resultCount), stringsAsFactors = FALSE)
 
-   readr::write_csv(all, out_file)
+  readr::write_csv(all, out_file)
 
 }
 
