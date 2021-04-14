@@ -9,6 +9,7 @@ packages:
   - scipiper
   - dplyr
   - xml2
+  - lubridate
 
 sources:
   - 1_wqp_pull/src/wqp_inventory.R
