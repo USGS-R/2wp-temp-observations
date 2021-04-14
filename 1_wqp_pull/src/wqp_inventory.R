@@ -145,7 +145,7 @@ combine_inventory <- function(ind_file, ...) {
            longitude = lon, resultCount) %>%
     group_by(MonitoringLocationIdentifier) %>%
     mutate(resultCount = sum(resultCount)) %>%
-    distinct(MonitoringLocationIdentifier)
+    distinct()
 
   # write and indicate the data file
   data_file <- scipiper::as_data_file(ind_file)
