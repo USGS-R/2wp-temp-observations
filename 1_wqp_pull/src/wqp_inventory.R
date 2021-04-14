@@ -95,12 +95,10 @@ inventory_wqp <- function(year_id, wqp_pull_params) {
     wqp_args$startDateHi <- as.Date(paste(as.numeric(year_id), '12-31', sep = '-'))
   }
 
-  # Print state-specific message so user can see progress
-  message('Retrieving whatWQPdata for state ',
+  # Print time-specific message so user can see progress
+  message('Retrieving whatWQPdata for the following time period ',
           paste(wqp_args$startDateLo, wqp_args$startDateHi, sep = ' : '))
 
-  # first try the full state pull, wrapped in try so function does not fail
-  # with an error.
   temp_dat <- try(wqp_call(whatWQPdata, wqp_args[c('characteristicName',
                                                    'startDateLo', 'startDateHi')]))
 
@@ -304,3 +302,10 @@ summarize_wqp_data <- function(data_ind, out_file) {
 
 }
 
+get_start_years <- function(begin, end) {
+
+  # these years were figured out with a bit of trial and error
+  # in later years, there are a lot of sites, so we have to go down to a single year
+  years <- c(begin, seq(1980, 1997, by = 3), seq(1998, 2003, by = 2), seq(2004, lubridate::year(as.Date(end))))
+  return(as.character(years))
+}
