@@ -1,10 +1,10 @@
 version: 0.3.0
 name: 5_data_munge/out/wqp_daily_nodepths.rds.ind
 type: file
-hash: ccb5ca37ff00a83c925ce14ee5bbd1ce
-time: 2021-02-24 20:15:55 UTC
+hash: 9cbb5b93d94c2c475c4fa139c2ea13bf
+time: 2021-04-16 17:34:12 UTC
 depends:
-  5_data_munge/out/wqp_data_streams.rds.ind: 7d04717c21de32fb99a74acb3fe21aa2
+  5_data_munge/out/wqp_data_streams.rds.ind: fcf1a007a0c51e1c1ed04e8557e53042
   min_value: c96c32be843430ad3b4632edb49aee30
   max_value: 8550904a2a45c13015a45b21ef719fb7
   max_daily_range: afe39393dd5be2c095cd37fede5c5b89

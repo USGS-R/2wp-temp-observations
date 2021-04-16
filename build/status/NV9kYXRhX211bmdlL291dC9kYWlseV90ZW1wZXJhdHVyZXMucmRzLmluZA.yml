@@ -1,15 +1,18 @@
 version: 0.3.0
 name: 5_data_munge/out/daily_temperatures.rds.ind
 type: file
-hash: 2559c5a1483d7712c6bec174b12959ce
-time: 2021-02-24 20:46:02 UTC
+hash: 916cfbfb30bbb3ae4f92aa2e42e22971
+time: 2021-04-16 17:40:29 UTC
 depends:
-  5_data_munge/out/nwis_daily.rds.ind: f98c7dc99d7850302af89c33db216e5d
-  5_data_munge/out/wqp_daily_nodepths.rds.ind: ccb5ca37ff00a83c925ce14ee5bbd1ce
-  5_data_munge/out/ecosheds_munged.rds.ind: 9780f34ea52c748709efc88b9f54b905
+  5_data_munge/out/nwis_daily.rds.ind: fec374dff504368fe0c944a8c9f2c37b
+  5_data_munge/out/wqp_daily_nodepths.rds.ind: 9cbb5b93d94c2c475c4fa139c2ea13bf
+  5_data_munge/out/ecosheds_munged.rds.ind: dca3dd3faf0bbefcf6d217eecd37cf17
   5_data_munge/out/norwest_munged.rds.ind: feaf81678414249a565849201894184f
+  wqp_pull_date: bdafa77cdd0121be20c1bfb1bf1e186f
+  nwis_dv_pull_date: f2b6ae741030e53d057e4d06ebd3b82b
+  nwis_uv_pull_date: f2b6ae741030e53d057e4d06ebd3b82b
 fixed: 8f477b7e950fc4190a2f937e706494e7
 code:
   functions:
-    combine_all_dat: f8e6e983897ff14e3609a073dc4eeb60
+    combine_all_dat: be65eeb46466cbf43fc073be2b332b04
 
