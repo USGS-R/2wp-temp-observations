@@ -222,7 +222,7 @@ clean_sites <- function(in_ind, out_ind) {
   sites <- readRDS(sc_retrieve(in_ind, 'getters.yml')) %>%
     distinct() %>%
     # filter to stream sites
-    filter(site_type %in% c('ST', 'ST-TS', 'ST-CA','ST-DCH', 'Spring', 'Stream', 'stream', '')) %>%
+    filter(site_type %in% c('ST', 'ST-TS', 'ST-CA','ST-DCH', 'SP', 'Spring', 'Stream', 'stream', '')) %>%
     filter(!is.na(longitude)|!is.na(latitude)) %>%
     st_as_sf(coords = c('longitude', 'latitude'), crs = 4326) %>% #create sf object
     st_transform(crs = proj_albers) %>%
