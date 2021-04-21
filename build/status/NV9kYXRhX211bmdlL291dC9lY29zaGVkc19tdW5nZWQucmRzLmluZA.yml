@@ -1,15 +1,16 @@
 version: 0.3.0
 name: 5_data_munge/out/ecosheds_munged.rds.ind
 type: file
-hash: 1a358b0813b60a590fd644c729079e61
-time: 2020-07-30 20:36:09 UTC
+hash: dca3dd3faf0bbefcf6d217eecd37cf17
+time: 2021-04-16 17:35:57 UTC
 depends:
   4_other_sources/out/ecosheds_data.rds.ind: 757c1997b3abb119ec6702b123bef743
+  4_other_sources/out/ecosheds_sites.rds.ind: ac5e1c8c66de5d81df748931a52cba14
   min_value: c96c32be843430ad3b4632edb49aee30
   max_value: 8550904a2a45c13015a45b21ef719fb7
 fixed: 7057a23274ddeb721381954068056a8e
 code:
   functions:
     f_to_c: a61909ceabd1801b610840dc86315ffe
-    munge_ecosheds: 04d075970d82865a6f82323b8a4c341f
+    munge_ecosheds: da9b06e89c16bedd93a4d25ed4e6a6d6
 

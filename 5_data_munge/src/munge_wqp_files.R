@@ -43,15 +43,17 @@ munge_wqp_withdepths <- function(in_ind, min_value, max_value, max_daily_range, 
     filter(grepl('deg C|deg F', `ResultMeasure/MeasureUnitCode`, ignore.case = TRUE)) %>%
     mutate(ResultMeasureValue = ifelse(grepl('deg F', `ResultMeasure/MeasureUnitCode`, ignore.case = TRUE),
                                        f_to_c(ResultMeasureValue), ResultMeasureValue)) %>%
-    filter(ResultMeasureValue > min_value,
-           ResultMeasureValue < max_value) %>%
     mutate(`ResultMeasure/MeasureUnitCode` = 'deg C')
 
   dat_daily <- group_by(dat_reduced, MonitoringLocationIdentifier, ActivityStartDate, sample_depth) %>%
     summarize(temperature_mean_daily = mean(ResultMeasureValue),
               temperature_min_daily = min(ResultMeasureValue),
               temperature_max_daily = max(ResultMeasureValue),
-              n_obs = n())
+              n_obs = n()) %>%
+    filter(temperature_mean_daily > min_value & temperature_mean_daily < max_value,
+           temperature_min_daily > min_value & temperature_min_daily < max_value,
+           temperature_max_daily > min_value & temperature_max_daily < max_value) %>%
+    filter(sample_depth > 0)
 
   dat_daily_meta <- select(dat_reduced, -ResultMeasureValue, -`ActivityStartTime/Time`) %>%
     group_by(MonitoringLocationIdentifier, ActivityStartDate, sample_depth) %>%
@@ -87,14 +89,16 @@ munge_wqp_withoutdepths <- function(in_ind, min_value, max_value, max_daily_rang
     filter(grepl('deg C|deg F', `ResultMeasure/MeasureUnitCode`, ignore.case = TRUE)) %>%
     mutate(ResultMeasureValue = ifelse(grepl('deg F', `ResultMeasure/MeasureUnitCode`, ignore.case = TRUE),
                                        f_to_c(ResultMeasureValue), ResultMeasureValue)) %>%
-    mutate(`ResultMeasure/MeasureUnitCode` = 'deg C') %>%
-    filter(ResultMeasureValue > min_value, ResultMeasureValue < max_value)
+    mutate(`ResultMeasure/MeasureUnitCode` = 'deg C')
 
   dat_daily <- group_by(dat_reduced, MonitoringLocationIdentifier, ActivityStartDate) %>%
     summarize(temperature_mean_daily = mean(ResultMeasureValue),
               temperature_min_daily = min(ResultMeasureValue),
               temperature_max_daily = max(ResultMeasureValue),
-              n_obs = n())
+              n_obs = n()) %>%
+    filter(temperature_mean_daily > min_value & temperature_mean_daily < max_value,
+           temperature_min_daily > min_value & temperature_min_daily < max_value,
+           temperature_max_daily > min_value & temperature_max_daily < max_value)
 
   # save
   data_file <- scipiper::as_data_file(out_ind)

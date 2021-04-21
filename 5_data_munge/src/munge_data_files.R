@@ -15,7 +15,9 @@ munge_nwis <- function(dv_ind, uv_ind, min_value, max_value, out_ind) {
   # need to keep rows where mean is NA because sometimes still min/max values
   nwis <- bind_rows(dv, uv) %>%
     #filter(grepl('A', cd_value, ignore.case = FALSE)) %>%
-    filter(Mean_temperature > min_value & Mean_temperature < max_value|is.na(Mean_temperature))
+    filter(Mean_temperature > min_value & Mean_temperature < max_value|is.na(Mean_temperature),
+           Max_temperature > min_value & Max_temperature < max_value|is.na(Max_temperature),
+           Min_temperature > min_value & Min_temperature < max_value|is.na(Min_temperature))
 
   # save
   data_file <- scipiper::as_data_file(out_ind)
@@ -24,22 +26,25 @@ munge_nwis <- function(dv_ind, uv_ind, min_value, max_value, out_ind) {
 
 }
 
-munge_ecosheds <- function(in_ind, min_value, max_value, out_ind) {
+munge_ecosheds <- function(in_ind, sites_ind, min_value, max_value, out_ind) {
   dat <- readRDS(sc_retrieve(in_ind, remake_file = 'getters.yml'))
+  sites <- readRDS(sc_retrieve(sites_ind, remake_file = 'getters.yml'))
 
   # some data appears to be in fahrenheit (values > 45)
   # find those series and convert to celsius
-
   over_45 <- filter(dat, mean >= 45)
   high_series<- filter(dat, series_id %in% unique(over_45$series_id)) %>%
-    mutate(mean = f_to_c(mean))
+    mutate(mean = f_to_c(mean),
+           min = f_to_c(min),
+           max = f_to_c(max))
 
   # bind with "good" data
   # remove data above 35, below 0
   dat_out <- filter(dat, !series_id %in% unique(over_45$series_id)) %>%
     bind_rows(high_series) %>%
-    filter(mean > min_value,
-           mean < max_value)
+    filter(mean > min_value & mean < max_value) %>%
+    filter(min > min_value & min < max_value) %>%
+    filter(max > min_value & max < max_value)
 
   message(nrow(dat) - nrow(dat_out), ' temperature observations dropped because they were outside of 0-35 deg C.')
 
@@ -47,6 +52,12 @@ munge_ecosheds <- function(in_ind, min_value, max_value, out_ind) {
     filter(!grepl('delete data|inaccurate|setup|bad value|preplacement|dewatered|out of water|out ofwater|outofwater|removal|set up|too warm', comment, ignore.case = TRUE))
 
   message(nrow(dat_out) - nrow(dat_out2), ' temperature observations dropped due to comments that indicated poor data quality.')
+
+  # get the right site ID in the dataframe
+  # site ID is a combo of agency_name and location_name from Ecosheds
+  dat_out2 <- left_join(dat_out2, select(sites, location_id, agency_id, agency_name, location_name)) %>%
+    mutate(site_id = paste(agency_name, location_name, sep = '-')) %>%
+    select(-agency_name, -location_name, -location_id, -agency_id, -series_id)
 
   saveRDS(dat_out2, file = as_data_file(out_ind))
   gd_put(out_ind)
@@ -97,7 +108,9 @@ munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
     mutate(DailyMean = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMean, f_to_c(DailyMean)),
            DailyMin = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMin, f_to_c(DailyMin)),
            DailyMax = ifelse(grepl('C', UOM, ignore.case = TRUE), DailyMax, f_to_c(DailyMax))) %>%
-    filter(DailyMean > min_value & DailyMean < max_value|is.na(DailyMean))
+    filter(DailyMean > min_value & DailyMean < max_value|is.na(DailyMean),
+           DailyMin > min_value & DailyMin < max_value|is.na(DailyMin),
+           DailyMax > min_value & DailyMax < max_value|is.na(DailyMax))
 
   # select columns for output
   dat_out <- select(dat_out, -DailySD, -DailyRange, -SampleYear, -UOM, -site_meta, -year) %>%
@@ -108,7 +121,7 @@ munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
   gd_put(out_ind)
 }
 
-combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_ind) {
+combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_ind, ...) {
   wqp <- readRDS(sc_retrieve(wqp_ind, remake_file = 'getters.yml')) %>%
     ungroup() %>%
     mutate(date = as.Date(ActivityStartDate), source = 'wqp') %>%
@@ -125,8 +138,7 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
            min_temp_degC = Min_temperature, max_temp_degC = Max_temperature, n_obs, source)
 
   ecosheds <- readRDS(sc_retrieve(ecosheds_ind, remake_file = 'getters.yml')) %>%
-    mutate(source = 'ecosheds',
-           site_id = as.character(location_id)) %>%
+    mutate(source = 'ecosheds') %>%
     select(site_id, date, mean_temp_degC = mean, min_temp_degC = min, max_temp_degC = max, n_obs = n, source)
 
   norwest <- readRDS(sc_retrieve(norwest_ind, 'getters.yml')) %>%
@@ -138,11 +150,18 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
   all_dat <- bind_rows(nwis, wqp, ecosheds, norwest) %>%
     distinct(site_id, date, mean_temp_degC, min_temp_degC, max_temp_degC, .keep_all = TRUE)
 
+  # a bit of cleanup
+  # first obs in 1891, but dates include year 5 and 1012
+  # also some obs in the future
+  max_pull_date <- as.numeric(max(c(...))) + 5 # give a 5 day buffer for delays in pulls
+  max_pull_date <- as.Date(as.character(max_pull_date), format = '%Y%m%d')
+
+  cleaned_dat <- filter(all_dat, date > as.Date('1890-01-01') & date < max_pull_date)
+
   # save
   data_file <- scipiper::as_data_file(out_ind)
-  saveRDS(all_dat, data_file)
+  saveRDS(cleaned_dat, data_file)
   gd_put(out_ind)
-
 }
 
 combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_ind, ecosheds_sites_ind, norwest_sites_ind, out_ind){
@@ -171,7 +190,7 @@ combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_in
 
   ecosheds_sites <- readRDS(sc_retrieve(ecosheds_sites_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'ecosheds', site_type = 'stream',
-           site_id = as.character(location_id)) %>%
+           site_id = paste(agency_name, location_name, sep = '-')) %>%
     select(site_id, latitude, longitude, site_type, source, original_source = agency_description)
 
   all_sites <- bind_rows(nwis_sites, wqp_sites, ecosheds_sites, norwest_sites)
@@ -203,7 +222,7 @@ clean_sites <- function(in_ind, out_ind) {
   sites <- readRDS(sc_retrieve(in_ind, 'getters.yml')) %>%
     distinct() %>%
     # filter to stream sites
-    filter(site_type %in% c('ST', 'ST-TS', 'ST-CA','ST-DCH', 'Spring', 'Stream', 'stream', '')) %>%
+    filter(site_type %in% c('ST', 'ST-TS', 'ST-CA','ST-DCH', 'SP', 'Spring', 'Stream', 'stream', '')) %>%
     filter(!is.na(longitude)|!is.na(latitude)) %>%
     st_as_sf(coords = c('longitude', 'latitude'), crs = 4326) %>% #create sf object
     st_transform(crs = proj_albers) %>%
