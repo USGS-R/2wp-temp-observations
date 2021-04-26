@@ -25,7 +25,7 @@ targets:
 # -- For NWISdv, do the coarse QA  -- #
 
   min_value:
-    command: I(0)
+    command: c(I(-0.5))
 
   max_value:
     command: I(35)
