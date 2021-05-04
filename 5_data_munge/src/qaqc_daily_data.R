@@ -55,8 +55,9 @@ qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind,
            low_bound = temp_mean - outlier_cut_off,
            up_bound = temp_mean + outlier_cut_off) %>%
     ungroup() %>%
-    mutate(flag = ifelse(mean_temp_degC < low_bound | mean_temp_degC > up_bound,
+    mutate(flag_o = ifelse(mean_temp_degC < low_bound | mean_temp_degC > up_bound,
                          "o", NA)) %>%
+    mutate(flag = ifelse(is.na(flag), flag_o, paste(flag, flag_o, sep = '; '))) %>%
     select(site_id, date, mean_temp_degC, min_temp_degC, max_temp_degC, n_obs, source, flag)
   # save the data file
   data_file <- scipiper::as_data_file(out_ind)
