@@ -8,8 +8,15 @@ qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind,
   # read in sites
   sites <- readRDS(sc_retrieve(site_in_ind, remake_file = 'getters.yml'))
   # filter to stream sites in the U.S.
+  # do a group on site name and lat long to remove duplicates
   dat_red <- readRDS(sc_retrieve(temp_in_ind, remake_file = 'getters.yml')) %>%
-    filter(site_id %in% unique(sites$site_id))
+    filter(site_id %in% unique(sites$site_id)) %>%
+    left_join(select(sites, site_id, source, latitude, longitude)) %>%
+    group_by(site_id, date, lat4 = round(latitude, 4), lon4 = round(longitude, 4)) %>%
+    distinct(mean_temp_degC, .keep_all = TRUE) %>%
+    ungroup() %>%
+    select(-latitude, -longitude, -lat4, -lon4)
+
   # reading the daily temperature data-in, removing NA dates,
   # and creating day of the year column.
   #creating doy bins with 6 days intervals.

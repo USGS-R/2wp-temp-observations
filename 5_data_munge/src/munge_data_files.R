@@ -122,15 +122,6 @@ munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
 }
 
 combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_ind, ...) {
-  wqp <- readRDS(sc_retrieve(wqp_ind, remake_file = 'getters.yml')) %>%
-    ungroup() %>%
-    mutate(date = as.Date(ActivityStartDate), source = 'wqp') %>%
-    select(site_id = MonitoringLocationIdentifier,
-           date,
-           mean_temp_degC = temperature_mean_daily,
-           min_temp_degC = temperature_min_daily,
-           max_temp_degC = temperature_max_daily,
-           n_obs, source)
 
   nwis <- readRDS(sc_retrieve(nwis_ind, remake_file = 'getters.yml')) %>%
     mutate(site_id = paste0('USGS-', site_no),
@@ -141,12 +132,28 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
            flag = gsub('^; |NA|; NA', '', flag),
            flag = ifelse(flag %in% '', NA, flag)) %>%
     select(site_id, date = Date, mean_temp_degC = Mean_temperature,
-           min_temp_degC = Min_temperature, max_temp_degC = Max_temperature, n_obs, flag, source)
+           min_temp_degC = Min_temperature, max_temp_degC = Max_temperature, n_obs, flag, source) %>%
+    mutate(unique_id = paste0(site_id, date))
+
+  wqp <- readRDS(sc_retrieve(wqp_ind, remake_file = 'getters.yml')) %>%
+    ungroup() %>%
+    mutate(date = as.Date(ActivityStartDate), source = 'wqp') %>%
+    select(site_id = MonitoringLocationIdentifier,
+           date,
+           mean_temp_degC = temperature_mean_daily,
+           min_temp_degC = temperature_min_daily,
+           max_temp_degC = temperature_max_daily,
+           n_obs, source) %>%
+    mutate(unique_id = paste0(site_id, date)) %>%
+    filter(!(unique_id %in% nwis$unique_id))
 
   ecosheds <- readRDS(sc_retrieve(ecosheds_ind, remake_file = 'getters.yml')) %>%
     mutate(source = 'ecosheds',
            flag = ifelse(flagged, 'ef', NA)) %>%
-    select(site_id, date, mean_temp_degC = mean, min_temp_degC = min, max_temp_degC = max, n_obs = n, flag, source)
+    select(site_id, date, mean_temp_degC = mean, min_temp_degC = min,
+           max_temp_degC = max, n_obs = n, flag, source)  %>%
+    mutate(unique_id = paste0(site_id, date)) %>%
+    filter(!(unique_id %in% nwis$unique_id))
 
   norwest <- readRDS(sc_retrieve(norwest_ind, 'getters.yml')) %>%
     mutate(source = 'norwest',
@@ -155,6 +162,7 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
            min_temp_degC = DailyMin, max_temp_degC = DailyMax, n_obs = Nobs, source)
 
   all_dat <- bind_rows(nwis, wqp, ecosheds, norwest) %>%
+    select(-unique_id) %>%
     distinct(site_id, date, mean_temp_degC, min_temp_degC, max_temp_degC, .keep_all = TRUE)
 
   # a bit of cleanup
