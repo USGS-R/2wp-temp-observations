@@ -60,6 +60,7 @@ targets:
       sites_ind = '5_data_munge/out/stream_sites_us.rds.ind',
       search_radius = 500)
 
+  # create a crosswalk to go from sites to reach IDs
   6_network/out/site_stream_crosswalk.rds.ind:
     command: create_crosswalk(
       out_ind = target_name,
@@ -80,6 +81,7 @@ targets:
 
 
   ##### visuals ######
+  # these are some targeted and random checks on site-to-reach matches
   # gd_get these indicator files to grab the files from drive
   6_network/out/longest_reaches_plots.zip.ind:
     command: make_site_reach_plots(outind = target_name,

@@ -139,7 +139,12 @@ create_crosswalk <- function(out_ind, matched_ind, sites_ind) {
 
   crosswalk <- left_join(sites,
                          select(matched, seg_id_orig_match, id, seg_id_reassign, site_upstream_distance, site_downstream_distance, offset), by = 'id') %>%
-    st_drop_geometry()
+    st_drop_geometry() %>%
+    # clean up site types
+    mutate(site_type = case_when(
+      site_type %in% c('ST', 'stream', 'Stream') ~ 'ST',
+      site_type %in% c('SP', 'Spring') ~ 'SP',
+      TRUE ~ site_type))
 
   saveRDS(crosswalk, as_data_file(out_ind))
   gd_put(out_ind)

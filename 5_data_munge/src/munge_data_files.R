@@ -49,7 +49,7 @@ munge_ecosheds <- function(in_ind, sites_ind, min_value, max_value, out_ind) {
   message(nrow(dat) - nrow(dat_out), ' temperature observations dropped because they were outside of 0-35 deg C.')
 
   dat_out2 <- dat_out %>%
-    filter(!grepl('delete data|inaccurate|setup|bad value|preplacement|dewatered|out of water|out ofwater|outofwater|removal|set up|too warm', comment, ignore.case = TRUE))
+    filter(!grepl('delete data|inaccurate|setup|bad value|preplacement|dewatered|out of water|out ofwater|outofwater|outof water|out fowater|out of the water|not in water|not in water|removal|set up|too warm|in air|dry|bad data|Pre-Deploy|Post-retrieval|not stream temperature|not in water|corrupted|de watered|logger out', comment, ignore.case = TRUE))
 
   message(nrow(dat_out) - nrow(dat_out2), ' temperature observations dropped due to comments that indicated poor data quality.')
 
@@ -122,6 +122,19 @@ munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
 }
 
 combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_ind, ...) {
+
+  nwis <- readRDS(sc_retrieve(nwis_ind, remake_file = 'getters.yml')) %>%
+    mutate(site_id = paste0('USGS-', site_no),
+           qual = ifelse(grepl('P', cd, ignore.case = FALSE), 'P', ''),
+           # all codes that could affect quality from here: https://help.waterdata.usgs.gov/codes-and-parameters/instantaneous-and-daily-value-status-codes
+           status = stringr::str_extract(cd, 'Dry|Eqp|Ice|Mnt|Pmp|Bkw|Fld|Tst|Zfl'),
+           flag = paste(qual, status, sep = '; '),
+           flag = gsub('^; |NA|; NA', '', flag),
+           flag = ifelse(flag %in% '', NA, flag)) %>%
+    select(site_id, date = Date, mean_temp_degC = Mean_temperature,
+           min_temp_degC = Min_temperature, max_temp_degC = Max_temperature, n_obs, flag, source) %>%
+    mutate(unique_id = paste0(site_id, date))
+
   wqp <- readRDS(sc_retrieve(wqp_ind, remake_file = 'getters.yml')) %>%
     ungroup() %>%
     mutate(date = as.Date(ActivityStartDate), source = 'wqp') %>%
@@ -130,16 +143,17 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
            mean_temp_degC = temperature_mean_daily,
            min_temp_degC = temperature_min_daily,
            max_temp_degC = temperature_max_daily,
-           n_obs, source)
-
-  nwis <- readRDS(sc_retrieve(nwis_ind, remake_file = 'getters.yml')) %>%
-    mutate(site_id = paste0('USGS-', site_no)) %>%
-    select(site_id, date = Date, mean_temp_degC = Mean_temperature,
-           min_temp_degC = Min_temperature, max_temp_degC = Max_temperature, n_obs, source)
+           n_obs, source) %>%
+    mutate(unique_id = paste0(site_id, date)) %>%
+    filter(!(unique_id %in% nwis$unique_id))
 
   ecosheds <- readRDS(sc_retrieve(ecosheds_ind, remake_file = 'getters.yml')) %>%
-    mutate(source = 'ecosheds') %>%
-    select(site_id, date, mean_temp_degC = mean, min_temp_degC = min, max_temp_degC = max, n_obs = n, source)
+    mutate(source = 'ecosheds',
+           flag = ifelse(flagged, 'ef', NA)) %>%
+    select(site_id, date, mean_temp_degC = mean, min_temp_degC = min,
+           max_temp_degC = max, n_obs = n, flag, source)  %>%
+    mutate(unique_id = paste0(site_id, date)) %>%
+    filter(!(unique_id %in% nwis$unique_id))
 
   norwest <- readRDS(sc_retrieve(norwest_ind, 'getters.yml')) %>%
     mutate(source = 'norwest',
@@ -148,6 +162,7 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
            min_temp_degC = DailyMin, max_temp_degC = DailyMax, n_obs = Nobs, source)
 
   all_dat <- bind_rows(nwis, wqp, ecosheds, norwest) %>%
+    select(-unique_id) %>%
     distinct(site_id, date, mean_temp_degC, min_temp_degC, max_temp_degC, .keep_all = TRUE)
 
   # a bit of cleanup

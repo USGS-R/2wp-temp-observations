@@ -8,12 +8,19 @@ qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind,
   # read in sites
   sites <- readRDS(sc_retrieve(site_in_ind, remake_file = 'getters.yml'))
   # filter to stream sites in the U.S.
+  # do a group on site name and lat long to remove duplicates
   dat_red <- readRDS(sc_retrieve(temp_in_ind, remake_file = 'getters.yml')) %>%
-    filter(site_id %in% unique(sites$site_id))
+    filter(site_id %in% unique(sites$site_id)) %>%
+    left_join(select(sites, site_id, source, latitude, longitude)) %>%
+    group_by(site_id, date, lat4 = round(latitude, 4), lon4 = round(longitude, 4)) %>%
+    distinct(mean_temp_degC, .keep_all = TRUE) %>%
+    ungroup() %>%
+    select(-latitude, -longitude, -lat4, -lon4)
+
   # reading the daily temperature data-in, removing NA dates,
   # and creating day of the year column.
   #creating doy bins with 6 days intervals.
-  daily_dat_mod <- dat_red %>%
+  dat_red <- dat_red %>%
     mutate(doy = lubridate::yday(date),
          doy_bins = cut(doy, breaks =
                           seq(from = 0,
@@ -44,7 +51,8 @@ qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind,
   yard_stick <- 5
   lb <- 10  # lower bound
   ub <- 15  # upper bound
-  binned_daily_data_complete <- left_join(daily_dat_mod, sites_dat_mod) %>%
+
+  dat_red <- left_join(dat_red, sites_dat_mod) %>%
     group_by(site_type, lat_bins, long_bins, doy_bins) %>%
     mutate(n_per_group = n(),
            temp_mean = mean(mean_temp_degC, na.rm = TRUE),
@@ -55,11 +63,16 @@ qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind,
            low_bound = temp_mean - outlier_cut_off,
            up_bound = temp_mean + outlier_cut_off) %>%
     ungroup() %>%
-    mutate(flag = ifelse(mean_temp_degC < low_bound | mean_temp_degC > up_bound,
+    mutate(flag_o = ifelse(mean_temp_degC < low_bound | mean_temp_degC > up_bound,
                          "o", NA)) %>%
+    mutate(flag = case_when(
+      is.na(flag_o) ~ flag,
+      !is.na(flag_o) & !is.na(flag) ~ paste(flag, flag_o, sep = '; '),
+      !is.na(flag_o) & is.na(flag) ~ flag_o,
+      TRUE ~ NA_character_)) %>%
     select(site_id, date, mean_temp_degC, min_temp_degC, max_temp_degC, n_obs, source, flag)
   # save the data file
   data_file <- scipiper::as_data_file(out_ind)
-  saveRDS(binned_daily_data_complete, data_file)
+  saveRDS(dat_red, data_file)
   gd_put(out_ind)
 }
