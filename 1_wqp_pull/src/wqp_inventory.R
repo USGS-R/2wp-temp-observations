@@ -209,7 +209,7 @@ partition_wqp_inventory <- function(partitions_ind, wqp_pull_params, inventory_i
 
   # filter out bad org names
   # these orgs cause "Frequest failed [400]" errors
-  bad_orgs <- grep(' |\\.|/', wqp_inventory$OrganizationIdentifier, value = TRUE)
+  bad_orgs <- grep(" |\\.|/|'", wqp_inventory$OrganizationIdentifier, value = TRUE)
   bad_orgs_sites <- filter(wqp_inventory, OrganizationIdentifier %in% bad_orgs)
 
   if (nrow(bad_orgs_sites) > 0){
