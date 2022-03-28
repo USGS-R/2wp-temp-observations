@@ -26,7 +26,7 @@ targets:
 # pull IDs will be generated with this date string YYYYMMDD
 
   wqp_pull_date:
-    command: c(I('2021-04-14'))
+    command: c(I('2022-03-28'))
 
 # -- get a CONUS inventory of available data for download -- #
 
@@ -47,10 +47,10 @@ targets:
   1_wqp_pull/inout/wqp_inventory.feather.ind:
     command: do_inventory_tasks(
       start_year = start_year,
+      pull_date = wqp_pull_date,
       final_target = target_name,
       '1_wqp_pull/src/wqp_inventory.R')
     depends:
-      - wqp_pull_date
       - wqp_pull_parameters
 
   # write a table that shows sites and records by state for each comparison

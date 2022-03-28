@@ -15,9 +15,9 @@
 #'   one row per site/variable combination and the 'resultCount' being the
 #'   variable from which we will make decisions about partitioning data pull
 #'   requests.
-do_inventory_tasks <- function(start_year, final_target, ...) {
+do_inventory_tasks <- function(start_year, pull_date, final_target, ...) {
 
-  task_name <- start_year
+  task_name <- sprintf('%s_pulldate%s', start_year, pull_date)
 
   # define tasks
   download_step <- create_task_step(
@@ -26,7 +26,8 @@ do_inventory_tasks <- function(start_year, final_target, ...) {
       sprintf('%s_site_inventory', task_name)
     },
     command = function(task_name, ...) {
-      sprintf("inventory_wqp(year_id = I('%s'), wqp_pull_params = wqp_pull_parameters)", task_name)
+      sprintf("inventory_wqp(year_id = I('%s'), wqp_pull_params = wqp_pull_parameters)", gsub(paste0('_pulldate', pull_date), '', task_name))
+
     }
   )
 
