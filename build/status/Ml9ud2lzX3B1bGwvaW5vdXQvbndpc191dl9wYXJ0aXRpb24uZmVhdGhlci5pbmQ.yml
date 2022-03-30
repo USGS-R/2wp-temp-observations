@@ -1,13 +1,13 @@
 version: 0.3.0
 name: 2_nwis_pull/inout/nwis_uv_partition.feather.ind
 type: file
-hash: 7af45d824565e5918422c36b396588f6
-time: 2021-04-07 21:39:18 UTC
+hash: 9b5494d9280a9d6bac400c24a19c4ef0
+time: 2022-03-30 17:53:08 UTC
 depends:
-  2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind: 61aeba41b21fe318b908b456048ff4d9
+  2_nwis_pull/inout/nwis_uv_inventory_reduced.feather.ind: 91127609f8fbb09a6793101863bb852e
   nwis_pull_size: bf6a897122707e205d7ad26fc0132080
   site_type_keep: 1dda0c69f59b81fcad3048999043a0a9
-  nwis_uv_pull_date: f2b6ae741030e53d057e4d06ebd3b82b
+  nwis_uv_pull_date: b383b10826eda8f7a37a367f07122a38
 fixed: ac3fcec4b396ccf004113a8dc5e03171
 code:
   functions:
