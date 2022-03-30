@@ -174,7 +174,7 @@ choose_temp_column_dv <- function(temp_dat) {
                            names_pattern = '(.*Wtemp|.*Min|.*Max|.*Mean)_(.*)',
                            values_drop_na = TRUE) %>%
     mutate(cd = ifelse(is.na(Mean_temperature), ifelse(is.na(Max_temperature), Min_cd, Max_cd), cd)) %>%
-    select(-Min_cd, -Max_cd)
+    select(-Min_cd, -Max_cd, -agency_cd)
 
   # find which col_name has the most records for each site,
   # and keep that column
@@ -182,23 +182,23 @@ choose_temp_column_dv <- function(temp_dat) {
   # finds the number of records per site across the whole dataset
   # In instances where there are more than one site per date, the
   # the site with the most overall values is chosen.
-  fixed_dups <- dat_long %>%
-    group_by(site_no, location_info) %>%
-    mutate(count_nu = n()) %>%
-    ungroup() %>%
-    group_by(site_no, Date) %>%
-    slice(which.max(count_nu)) %>%
-    ungroup() %>%
-    select(-agency_cd, -count_nu)
+  # fixed_dups <- dat_long %>%
+  #   group_by(site_no, location_info) %>%
+  #   mutate(count_nu = n()) %>%
+  #   ungroup() %>%
+  #   group_by(site_no, Date) %>%
+  #   slice(which.max(count_nu)) %>%
+  #   ungroup() %>%
+  #   select(-agency_cd, -count_nu)
 
-  if (!all(names(fixed_dups) %in%
-           c("site_no", "Date", "location_info", "Mean_temperature",
-             "Min_temperature", "Max_temperature", "cd"))) {
-    message("!!Some weird column naming convention is out-smarting your pattern matching!!")
-  }
-  fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
+  # if (!all(names(fixed_dups) %in%
+  #          c("site_no", "Date", "location_info", "Mean_temperature",
+  #            "Min_temperature", "Max_temperature", "cd"))) {
+  #   message("!!Some weird column naming convention is out-smarting your pattern matching!!")
+  # }
+  # fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
 
-  return(fixed_dups)
+  return(dat_long)
 }
 
 choose_temp_column_uv <- function(temp_dat) {
@@ -230,21 +230,21 @@ choose_temp_column_uv <- function(temp_dat) {
   # finds the number of records per site across the whole dataset
   # In instances where there are more than one site per date, the
   # the site with the most overall values is chosen.
-  fixed_dups <- dat_long %>%
-    group_by(site_no, location_info) %>%
-    mutate(count_nu = n()) %>%
-    ungroup() %>%
-    group_by(site_no, Date) %>%
-    slice(which.max(count_nu)) %>%
-    ungroup() %>%
-    select(-count_nu)
+  # fixed_dups <- dat_long %>%
+  #   group_by(site_no, location_info) %>%
+  #   mutate(count_nu = n()) %>%
+  #   ungroup() %>%
+  #   group_by(site_no, Date) %>%
+  #   slice(which.max(count_nu)) %>%
+  #   ungroup() %>%
+  #   select(-count_nu)
 
-  if (!all(names(fixed_dups) %in%
-           c("site_no", "Date", "location_info", "Mean_temperature",
-             "Min_temperature", "Max_temperature", "n_obs", "cd"))) {
-    message("!!Some weird column naming convention is out-smarting your pattern matching!!")
-  }
-
-  fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
-  return(fixed_dups)
+  # if (!all(names(fixed_dups) %in%
+  #          c("site_no", "Date", "location_info", "Mean_temperature",
+  #            "Min_temperature", "Max_temperature", "n_obs", "cd"))) {
+  #   message("!!Some weird column naming convention is out-smarting your pattern matching!!")
+  # }
+  #
+  # fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
+  return(dat_long)
 }
