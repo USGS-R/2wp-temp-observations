@@ -32,7 +32,7 @@ plan_nwis_pull <- function(partitions_ind, service) {
   download <- scipiper::create_task_step(
     step_name = 'download',
     target_name = function(task_name, step_name, ...) {
-      file.path(folders$tmp, sprintf('%s_%s.rds', service, task_name))
+      file.path(folders$tmp, sprintf('%s_%s.qs', service, task_name))
     },
     command = function(steps, ...) {
       paste(
@@ -71,13 +71,13 @@ create_nwis_pull_makefile <- function(makefile, task_plan, final_targets) {
 # .ind file that we will want to share because it represents the shared cache
 combine_nwis_data <- function(ind_file, ...){
 
-  rds_files <- c(...)
+  qs_files <- c(...)
   df_list <- list()
 
-  for (i in seq_len(length(rds_files))){
+  for (i in seq_len(length(qs_files))){
 
-    message(paste0("Reading in and processing file ", rds_files[i]))
-    temp_dat <- readRDS(rds_files[i])
+    message(paste0("Reading in and processing file ", qs_files[i]))
+    temp_dat <- qs::qread(qs_files[i])
 
     if (grepl('_uv_', ind_file)) {
       reduced_dat <- choose_temp_column_uv(temp_dat)
@@ -147,7 +147,7 @@ get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbo
   # write the data to rds file. do this even if there were 0
   # results because remake expects this function to always create the target
   # file
-  saveRDS(nwis_dat, data_file)
+  qs::qsave(nwis_dat, data_file)
 }
 
 choose_temp_column_dv <- function(temp_dat) {

@@ -8,6 +8,7 @@ packages:
   - ggthemes
   - scipiper
   - dplyr
+  - qs
 
 sources:
   - 2_nwis_pull/src/inventory_nwis.R
