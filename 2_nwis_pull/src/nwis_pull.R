@@ -191,11 +191,11 @@ choose_temp_column_dv <- function(temp_dat) {
   #   ungroup() %>%
   #   select(-agency_cd, -count_nu)
 
-  # if (!all(names(fixed_dups) %in%
-  #          c("site_no", "Date", "location_info", "Mean_temperature",
-  #            "Min_temperature", "Max_temperature", "cd"))) {
-  #   message("!!Some weird column naming convention is out-smarting your pattern matching!!")
-  # }
+  if (!all(names(dat_long) %in%
+           c("site_no", "Date", "location_info", "Mean_temperature",
+             "Min_temperature", "Max_temperature", "cd"))) {
+    message("!!Some weird column naming convention is out-smarting your pattern matching!!")
+  }
   # fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
 
   return(dat_long)
@@ -239,11 +239,11 @@ choose_temp_column_uv <- function(temp_dat) {
   #   ungroup() %>%
   #   select(-count_nu)
 
-  # if (!all(names(fixed_dups) %in%
-  #          c("site_no", "Date", "location_info", "Mean_temperature",
-  #            "Min_temperature", "Max_temperature", "n_obs", "cd"))) {
-  #   message("!!Some weird column naming convention is out-smarting your pattern matching!!")
-  # }
+  if (!all(names(dat_long) %in%
+           c("site_no", "Date", "location_info", "Mean_temperature",
+             "Min_temperature", "Max_temperature", "n_obs", "cd"))) {
+    message("!!Some weird column naming convention is out-smarting your pattern matching!!")
+  }
   #
   # fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
   return(dat_long)
