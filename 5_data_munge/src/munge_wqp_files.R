@@ -7,7 +7,8 @@ filter_site_types <- function(in_ind, sites_ind, keep_types, out_ind) {
     pull(MonitoringLocationIdentifier)
 
   dat <- readRDS(sc_retrieve(in_ind, remake_file = 'getters.yml')) %>%
-    filter(MonitoringLocationIdentifier %in% sites)
+    filter(MonitoringLocationIdentifier %in% sites) %>%
+    filter(!CharacteristicName %in% 'Water, sample')
 
   saveRDS(dat, as_data_file(out_ind))
   gd_put(out_ind)
@@ -30,6 +31,7 @@ munge_wqp_withdepths <- function(in_ind, min_value, max_value, max_daily_range, 
     is.na(`ActivityDepthHeightMeasure/MeasureValue`) & is.na(`ResultDepthHeightMeasure/MeasureValue`) & !is.na(`ActivityTopDepthHeightMeasure/MeasureValue`) ~ `ActivityTopDepthHeightMeasure/MeasureValue`,
     is.na(`ActivityDepthHeightMeasure/MeasureValue`) & is.na(`ResultDepthHeightMeasure/MeasureValue`) & is.na(`ActivityTopDepthHeightMeasure/MeasureValue`) ~ `ActivityBottomDepthHeightMeasure/MeasureValue`
   ))
+
 
   dat <- mutate(dat, sample_depth_unit_code = case_when(
     !is.na(`ActivityDepthHeightMeasure/MeasureValue`) ~ `ActivityDepthHeightMeasure/MeasureUnitCode`,
