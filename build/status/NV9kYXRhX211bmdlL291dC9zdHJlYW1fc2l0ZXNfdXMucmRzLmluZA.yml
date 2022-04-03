@@ -1,12 +1,12 @@
 version: 0.3.0
 name: 5_data_munge/out/stream_sites_us.rds.ind
 type: file
-hash: 36d4e04430142075e97c030e36c47d71
-time: 2021-04-19 16:30:13 UTC
+hash: 4eba2c320134fb554ccca1a211a23bd0
+time: 2022-04-01 16:14:31 UTC
 depends:
-  5_data_munge/out/all_sites.rds.ind: 40423f6f3e6cbb5e7080aefd4208b233
+  5_data_munge/out/all_sites.rds.ind: 96d022247ee19d9db4e22cc7b8c9861e
 fixed: 81f96ba273c6047211c7d1908bad09fa
 code:
   functions:
-    clean_sites: cfe13118f0108fae4ab8c1431dca1118
+    clean_sites: 14a6d761d7028563a3e5cc34457c7d2d
 

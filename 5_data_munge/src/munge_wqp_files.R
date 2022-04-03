@@ -55,7 +55,7 @@ munge_wqp_withdepths <- function(in_ind, min_value, max_value, max_daily_range, 
     filter(temperature_mean_daily > min_value & temperature_mean_daily < max_value,
            temperature_min_daily > min_value & temperature_min_daily < max_value,
            temperature_max_daily > min_value & temperature_max_daily < max_value) %>%
-    filter(sample_depth > 0)
+    filter(sample_depth >= 0)
 
   dat_daily_meta <- select(dat_reduced, -ResultMeasureValue, -`ActivityStartTime/Time`) %>%
     group_by(MonitoringLocationIdentifier, ActivityStartDate, sample_depth) %>%

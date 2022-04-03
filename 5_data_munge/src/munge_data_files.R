@@ -6,9 +6,11 @@ f_to_c <- function(f) {
 munge_nwis <- function(dv_ind, uv_ind, min_value, max_value, out_ind) {
 
   dv <- readRDS(sc_retrieve(dv_ind, remake_file = 'getters.yml')) %>%
+    ungroup() %>%
     mutate(source = 'nwis_dv')
 
   uv <- readRDS(sc_retrieve(uv_ind, remake_file = 'getters.yml')) %>%
+    ungroup() %>%
     mutate(source = 'nwis_uv')
 
   # keeping provisional data for now
@@ -97,7 +99,8 @@ munge_norwest <- function(dat_ind, sites_ind, min_value, max_value, out_ind) {
                            max_temp < 32 ~ 'deg C',
                            min_temp < 30 ~ 'deg C',
                            TRUE ~ 'unknown')) %>%
-    select(region, NorWeST_ID, year, UOM2)
+    select(region, NorWeST_ID, year, UOM2) %>%
+    ungroup()
 
   dat_out <- left_join(mutate(dat_out, year = lubridate::year(SampleDate)), no_units) %>%
     mutate(UOM = ifelse(is.na(UOM)|UOM %in% 'Y', UOM2, UOM)) %>%
@@ -168,8 +171,8 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
   # a bit of cleanup
   # first obs in 1891, but dates include year 5 and 1012
   # also some obs in the future
-  max_pull_date <- as.numeric(max(c(...))) + 5 # give a 5 day buffer for delays in pulls
-  max_pull_date <- as.Date(as.character(max_pull_date), format = '%Y%m%d')
+  max_pull_date <- as.numeric(max(c(...))) # give a 5 day buffer for delays in pulls
+  max_pull_date <- as.Date(as.character(max_pull_date), format = '%Y%m%d') + 5
 
   cleaned_dat <- filter(all_dat, date > as.Date('1890-01-01') & date < max_pull_date)
 
@@ -208,7 +211,8 @@ combine_all_sites <- function(nwis_dv_sites_ind, nwis_uv_sites_ind, wqp_sites_in
            site_id = paste(agency_name, location_name, sep = '-')) %>%
     select(site_id, latitude, longitude, site_type, source, original_source = agency_description)
 
-  all_sites <- bind_rows(nwis_sites, wqp_sites, ecosheds_sites, norwest_sites)
+  all_sites <- bind_rows(nwis_sites, wqp_sites, ecosheds_sites, norwest_sites) %>%
+    distinct()
 
   saveRDS(all_sites, as_data_file(out_ind))
   gd_put(out_ind)
@@ -229,7 +233,13 @@ clean_sites <- function(in_ind, out_ind) {
   states <- st_as_sf(maps::map("state", plot = FALSE, fill = TRUE)) %>%
     bind_rows(mutate(st_as_sf(maps::map('world', 'USA:Alaska', plot = FALSE, fill = TRUE)), ID = 'alaska'),
               mutate(st_as_sf(maps::map('world', 'USA:Hawaii', plot = FALSE, fill = TRUE)), ID = 'hawaii'),
-              mutate(st_as_sf(maps::map('world', 'Puerto Rico', plot = FALSE, fill = TRUE)), ID = 'puerto rico')) %>%
+              mutate(st_as_sf(maps::map('world', 'Puerto Rico', plot = FALSE, fill = TRUE)), ID = 'puerto rico'),
+              mutate(st_as_sf(maps::map('world', 'Guam', plot = FALSE, fill = TRUE)), ID = 'guam'),
+              mutate(st_as_sf(maps::map('world', c("Virgin Islands, US:Saint Croix",
+                                                   "Virgin Islands, US:Saint John",
+                                                   "Virgin Islands, US:Saint Thomas"), plot = FALSE, fill = TRUE)), ID = 'us virgin islands'),
+              mutate(st_as_sf(maps::map('world', 'Northern Mariana', plot = FALSE, fill = TRUE)), ID = 'northern mariana islands'),
+              mutate(st_as_sf(maps::map('world', 'American Samoa', plot = FALSE, fill = TRUE)), ID = 'american samoa')) %>%
     st_transform(crs = proj_albers)
 
   #states_with_buffer <- st_buffer(states, dist = 1)
@@ -260,6 +270,20 @@ clean_sites <- function(in_ind, out_ind) {
   hawaii <- st_intersects(sites_no_state, st_buffer(states[51, ], dist = 4000))
   pot_hawaii <- sites_no_state[which(!is.na(as.numeric(hawaii))), ]
 
+  # guam
+  guam <- st_intersects(sites_no_state, st_buffer(states[53, ], dist = 4000))
+  pot_guam <- sites_no_state[which(!is.na(as.numeric(guam))), ]
+
+  # virgin islands
+  virginislands <- st_intersects(sites_no_state, st_buffer(states[54, ], dist = 4000))
+  pot_virginislands <- sites_no_state[which(!is.na(as.numeric(virginislands))), ]
+  # northern mariana
+  northernmariana <- st_intersects(sites_no_state, st_buffer(states[55, ], dist = 4000))
+  pot_northernmariana <- sites_no_state[which(!is.na(as.numeric(northernmariana))), ]
+  # american samoa
+  americansamoa <- st_intersects(sites_no_state, st_buffer(states[56, ], dist = 4000))
+  pot_americansamoa <- sites_no_state[which(!is.na(as.numeric(americansamoa))), ]
+
   # lower 48
   # have to use a big buffer to get some of the estuary sites out east
   lower_shape <- st_transform(st_as_sf(maps::map('world','USA(?!:hawaii)(?!:alaska)', plot = FALSE, fill = TRUE)), crs = proj_albers)
@@ -270,22 +294,28 @@ clean_sites <- function(in_ind, out_ind) {
   # for out-states, we assume those to be the outstate
   # for lower 48, we use nearest feature join
   sites_fixed_ids <- mutate(pot_puerto, ID = 'puerto rico') %>%
-    bind_rows(mutate(pot_alaska, ID = 'alaska')) %>%
-    bind_rows(mutate(pot_hawaii, ID = 'hawaii')) %>%
+    bind_rows(mutate(pot_alaska, ID = 'alaska'),
+              mutate(pot_hawaii, ID = 'hawaii'),
+              mutate(pot_guam, ID = 'guam'),
+              mutate(pot_virginislands, ID = 'us virgin islands'),
+              mutate(pot_northernmariana, ID = 'northern mariana islands'),
+              mutate(pot_americansamoa, ID= 'american samoa')) %>%
     bind_rows(st_join(x = pot_lower, y = states, join = st_nearest_feature))
 
-  # check sites that have no match
-  # these are ALL WQP sites
-  # some of these are in Samoan Islands, some appear to have the wrong longitude (high positive numbers)
-  # e.g., site 	21FLCOSP_WQX-45-03, if I turn the longitude to a negative value, lands in a stream in Florida
-  # just ignoring these for now
-  test <- filter(sites_no_state, !site_id %in% sites_fixed_ids$site_id)
 
   sites_fixed <- filter(sites, !is.na(ID)) %>%
     bind_rows(sites_fixed_ids) %>%
     st_transform(crs = 4326) %>%
     mutate(longitude = sf::st_coordinates(.)[,1],
            latitude = sf::st_coordinates(.)[,2])
+
+  # check sites that have no match
+  # these are ALL WQP sites
+  # some of these are in Samoan Islands, some appear to have the wrong longitude (high positive numbers)
+  # e.g., site 	21FLCOSP_WQX-45-03, if I turn the longitude to a negative value, lands in a stream in Florida
+  # just ignoring these for now
+  no_match <- filter(sites_no_state, !site_id %in% sites_fixed_ids$site_id)
+  message(paste0('Dropping ', nrow(no_match), " of ", nrow(sites), " sites that couldn't be matched to a U.S. state or territory."))
 
   saveRDS(sites_fixed, as_data_file(out_ind))
   gd_put(out_ind)
