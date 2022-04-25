@@ -70,7 +70,7 @@ qaqc_daily_temp_site_data <- function(temp_in_ind, site_in_ind,
       !is.na(flag_o) & !is.na(flag) ~ paste(flag, flag_o, sep = '; '),
       !is.na(flag_o) & is.na(flag) ~ flag_o,
       TRUE ~ NA_character_)) %>%
-    select(site_id, date, mean_temp_degC, min_temp_degC, max_temp_degC, n_obs, source, flag)
+    select(site_id, sub_location, date, time, mean_temp_degC, min_temp_degC, max_temp_degC, n_obs, source, flag)
   # save the data file
   data_file <- scipiper::as_data_file(out_ind)
   saveRDS(dat_red, data_file)

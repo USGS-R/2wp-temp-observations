@@ -32,7 +32,7 @@ plan_nwis_pull <- function(partitions_ind, service) {
   download <- scipiper::create_task_step(
     step_name = 'download',
     target_name = function(task_name, step_name, ...) {
-      file.path(folders$tmp, sprintf('%s_%s.rds', service, task_name))
+      file.path(folders$tmp, sprintf('%s_%s.qs', service, task_name))
     },
     command = function(steps, ...) {
       paste(
@@ -71,13 +71,13 @@ create_nwis_pull_makefile <- function(makefile, task_plan, final_targets) {
 # .ind file that we will want to share because it represents the shared cache
 combine_nwis_data <- function(ind_file, ...){
 
-  rds_files <- c(...)
+  qs_files <- c(...)
   df_list <- list()
 
-  for (i in seq_len(length(rds_files))){
+  for (i in seq_len(length(qs_files))){
 
-    message(paste0("Reading in and processing file ", rds_files[i]))
-    temp_dat <- readRDS(rds_files[i])
+    message(paste0("Reading in and processing file ", qs_files[i]))
+    temp_dat <- qs::qread(qs_files[i])
 
     if (grepl('_uv_', ind_file)) {
       reduced_dat <- choose_temp_column_uv(temp_dat)
@@ -147,7 +147,7 @@ get_nwis_data <- function(data_file, partition, nwis_pull_params, service, verbo
   # write the data to rds file. do this even if there were 0
   # results because remake expects this function to always create the target
   # file
-  saveRDS(nwis_dat, data_file)
+  qs::qsave(nwis_dat, data_file)
 }
 
 choose_temp_column_dv <- function(temp_dat) {
@@ -174,7 +174,7 @@ choose_temp_column_dv <- function(temp_dat) {
                            names_pattern = '(.*Wtemp|.*Min|.*Max|.*Mean)_(.*)',
                            values_drop_na = TRUE) %>%
     mutate(cd = ifelse(is.na(Mean_temperature), ifelse(is.na(Max_temperature), Min_cd, Max_cd), cd)) %>%
-    select(-Min_cd, -Max_cd)
+    select(-Min_cd, -Max_cd, -agency_cd)
 
   # find which col_name has the most records for each site,
   # and keep that column
@@ -182,23 +182,23 @@ choose_temp_column_dv <- function(temp_dat) {
   # finds the number of records per site across the whole dataset
   # In instances where there are more than one site per date, the
   # the site with the most overall values is chosen.
-  fixed_dups <- dat_long %>%
-    group_by(site_no, location_info) %>%
-    mutate(count_nu = n()) %>%
-    ungroup() %>%
-    group_by(site_no, Date) %>%
-    slice(which.max(count_nu)) %>%
-    ungroup() %>%
-    select(-agency_cd, -count_nu)
+  # fixed_dups <- dat_long %>%
+  #   group_by(site_no, location_info) %>%
+  #   mutate(count_nu = n()) %>%
+  #   ungroup() %>%
+  #   group_by(site_no, Date) %>%
+  #   slice(which.max(count_nu)) %>%
+  #   ungroup() %>%
+  #   select(-agency_cd, -count_nu)
 
-  if (!all(names(fixed_dups) %in%
+  if (!all(names(dat_long) %in%
            c("site_no", "Date", "location_info", "Mean_temperature",
              "Min_temperature", "Max_temperature", "cd"))) {
     message("!!Some weird column naming convention is out-smarting your pattern matching!!")
   }
-  fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
+  # fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
 
-  return(fixed_dups)
+  return(dat_long)
 }
 
 choose_temp_column_uv <- function(temp_dat) {
@@ -230,21 +230,21 @@ choose_temp_column_uv <- function(temp_dat) {
   # finds the number of records per site across the whole dataset
   # In instances where there are more than one site per date, the
   # the site with the most overall values is chosen.
-  fixed_dups <- dat_long %>%
-    group_by(site_no, location_info) %>%
-    mutate(count_nu = n()) %>%
-    ungroup() %>%
-    group_by(site_no, Date) %>%
-    slice(which.max(count_nu)) %>%
-    ungroup() %>%
-    select(-count_nu)
+  # fixed_dups <- dat_long %>%
+  #   group_by(site_no, location_info) %>%
+  #   mutate(count_nu = n()) %>%
+  #   ungroup() %>%
+  #   group_by(site_no, Date) %>%
+  #   slice(which.max(count_nu)) %>%
+  #   ungroup() %>%
+  #   select(-count_nu)
 
-  if (!all(names(fixed_dups) %in%
+  if (!all(names(dat_long) %in%
            c("site_no", "Date", "location_info", "Mean_temperature",
              "Min_temperature", "Max_temperature", "n_obs", "cd"))) {
     message("!!Some weird column naming convention is out-smarting your pattern matching!!")
   }
-
-  fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
-  return(fixed_dups)
+  #
+  # fixed_dups <- filter(fixed_dups, !is.na(Mean_temperature)|!is.na(Min_temperature)|!is.na(Max_temperature))
+  return(dat_long)
 }

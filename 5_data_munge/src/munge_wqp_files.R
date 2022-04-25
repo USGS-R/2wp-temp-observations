@@ -7,7 +7,8 @@ filter_site_types <- function(in_ind, sites_ind, keep_types, out_ind) {
     pull(MonitoringLocationIdentifier)
 
   dat <- readRDS(sc_retrieve(in_ind, remake_file = 'getters.yml')) %>%
-    filter(MonitoringLocationIdentifier %in% sites)
+    filter(MonitoringLocationIdentifier %in% sites) %>%
+    filter(!CharacteristicName %in% 'Water, sample')
 
   saveRDS(dat, as_data_file(out_ind))
   gd_put(out_ind)
@@ -31,6 +32,7 @@ munge_wqp_withdepths <- function(in_ind, min_value, max_value, max_daily_range, 
     is.na(`ActivityDepthHeightMeasure/MeasureValue`) & is.na(`ResultDepthHeightMeasure/MeasureValue`) & is.na(`ActivityTopDepthHeightMeasure/MeasureValue`) ~ `ActivityBottomDepthHeightMeasure/MeasureValue`
   ))
 
+
   dat <- mutate(dat, sample_depth_unit_code = case_when(
     !is.na(`ActivityDepthHeightMeasure/MeasureValue`) ~ `ActivityDepthHeightMeasure/MeasureUnitCode`,
     is.na(`ActivityDepthHeightMeasure/MeasureValue`) & !is.na(`ResultDepthHeightMeasure/MeasureValue`) ~ `ResultDepthHeightMeasure/MeasureUnitCode`,
@@ -53,7 +55,7 @@ munge_wqp_withdepths <- function(in_ind, min_value, max_value, max_daily_range, 
     filter(temperature_mean_daily > min_value & temperature_mean_daily < max_value,
            temperature_min_daily > min_value & temperature_min_daily < max_value,
            temperature_max_daily > min_value & temperature_max_daily < max_value) %>%
-    filter(sample_depth > 0)
+    filter(sample_depth >= 0)
 
   dat_daily_meta <- select(dat_reduced, -ResultMeasureValue, -`ActivityStartTime/Time`) %>%
     group_by(MonitoringLocationIdentifier, ActivityStartDate, sample_depth) %>%
@@ -95,7 +97,8 @@ munge_wqp_withoutdepths <- function(in_ind, min_value, max_value, max_daily_rang
     summarize(temperature_mean_daily = mean(ResultMeasureValue),
               temperature_min_daily = min(ResultMeasureValue),
               temperature_max_daily = max(ResultMeasureValue),
-              n_obs = n()) %>%
+              n_obs = n(),
+              time = ifelse(n_obs == 1, `ActivityStartTime/Time`, NA)) %>%
     filter(temperature_mean_daily > min_value & temperature_mean_daily < max_value,
            temperature_min_daily > min_value & temperature_min_daily < max_value,
            temperature_max_daily > min_value & temperature_max_daily < max_value)
