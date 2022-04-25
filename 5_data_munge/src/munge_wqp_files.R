@@ -97,7 +97,8 @@ munge_wqp_withoutdepths <- function(in_ind, min_value, max_value, max_daily_rang
     summarize(temperature_mean_daily = mean(ResultMeasureValue),
               temperature_min_daily = min(ResultMeasureValue),
               temperature_max_daily = max(ResultMeasureValue),
-              n_obs = n()) %>%
+              n_obs = n(),
+              time = ifelse(n_obs == 1, `ActivityStartTime/Time`, NA)) %>%
     filter(temperature_mean_daily > min_value & temperature_mean_daily < max_value,
            temperature_min_daily > min_value & temperature_min_daily < max_value,
            temperature_max_daily > min_value & temperature_max_daily < max_value)

@@ -134,8 +134,10 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
            flag = paste(qual, status, sep = '; '),
            flag = gsub('^; |NA|; NA', '', flag),
            flag = ifelse(flag %in% '', NA, flag)) %>%
-    select(site_id, date = Date, mean_temp_degC = Mean_temperature,
-           min_temp_degC = Min_temperature, max_temp_degC = Max_temperature, n_obs, flag, source) %>%
+    select(site_id, sub_location = location_info,
+           date = Date, mean_temp_degC = Mean_temperature,
+           min_temp_degC = Min_temperature, max_temp_degC = Max_temperature,
+           n_obs, flag, source) %>%
     mutate(unique_id = paste0(site_id, date))
 
   wqp <- readRDS(sc_retrieve(wqp_ind, remake_file = 'getters.yml')) %>%
@@ -143,6 +145,7 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
     mutate(date = as.Date(ActivityStartDate), source = 'wqp') %>%
     select(site_id = MonitoringLocationIdentifier,
            date,
+           time,
            mean_temp_degC = temperature_mean_daily,
            min_temp_degC = temperature_min_daily,
            max_temp_degC = temperature_max_daily,
@@ -166,7 +169,7 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
 
   all_dat <- bind_rows(nwis, wqp, ecosheds, norwest) %>%
     select(-unique_id) %>%
-    distinct(site_id, date, mean_temp_degC, min_temp_degC, max_temp_degC, .keep_all = TRUE)
+    distinct(site_id, date, time, mean_temp_degC, min_temp_degC, max_temp_degC, .keep_all = TRUE)
 
   # a bit of cleanup
   # first obs in 1891, but dates include year 5 and 1012
