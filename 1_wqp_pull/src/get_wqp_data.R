@@ -130,13 +130,13 @@ combine_wqp_dat <- function(ind_file, ...){
     }
     dat_mod <- dat_mod %>%
       filter(!is.na(ResultMeasureValue)) %>%
-      select(MonitoringLocationIdentifier, ActivityMediaName, ActivityStartDate, `ActivityStartTime/Time`, `ActivityStartTime/TimeZoneCode`,
+      select(MonitoringLocationIdentifier, ActivityMediaName, ActivityStartDate, ActivityEndDate, `ActivityStartTime/Time`, `ActivityStartTime/TimeZoneCode`,
              `ActivityDepthHeightMeasure/MeasureValue`, `ActivityDepthHeightMeasure/MeasureUnitCode`,
              `ActivityTopDepthHeightMeasure/MeasureValue`,`ActivityTopDepthHeightMeasure/MeasureUnitCode`,
              `ActivityBottomDepthHeightMeasure/MeasureValue`, `ActivityBottomDepthHeightMeasure/MeasureUnitCode`,
              ActivityCommentText, `SampleCollectionMethod/MethodIdentifier`, `SampleCollectionMethod/MethodIdentifierContext`,
              `SampleCollectionMethod/MethodName`,CharacteristicName, ResultMeasureValue,
-             `ResultMeasure/MeasureUnitCode`, ResultValueTypeName, PrecisionValue,
+             `ResultMeasure/MeasureUnitCode`, ResultValueTypeName, PrecisionValue, StatisticalBaseCode,
              ResultCommentText, `ResultDepthHeightMeasure/MeasureValue`, `ResultDepthHeightMeasure/MeasureUnitCode`, ProviderName) %>%
       mutate(PrecisionValue = as.numeric(PrecisionValue)) %>%
       mutate_at(vars(contains('MeasureValue')), as.numeric) %>%
