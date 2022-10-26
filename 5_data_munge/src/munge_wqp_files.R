@@ -129,6 +129,7 @@ munge_wqp_withoutdepths <- function(in_ind, min_value, max_value, max_daily_rang
 
 resolve_statcodes <- function(in_ind, out_ind) {
   dat <- readRDS(sc_retrieve(in_ind, remake_file = 'getters.yml')) %>%
+    ungroup() %>%
   # drop values that are estimated or blank-corrected
   # drop values that are not min, mean, max
     filter(!ResultValueTypeName %in% c('Estimated', 'Blank Corrected Calc')) %>%
@@ -137,12 +138,16 @@ resolve_statcodes <- function(in_ind, out_ind) {
                                       'Daily Geometric Mean'))
 
 
+  # print message that says how many observations we lost when dropped
+  nrow_o <- nrow(readRDS(sc_retrieve(in_ind, remake_file = 'getters.yml')))
+  message(paste(nrow_o - nrow(dat), 'observations were dropped due to estimation, blank correction, or statcode that was not mean, min, max'))
   # for some data, the start and end dates are different, and data providers
   # seem to be using these as a date range of the whole dataset
   # sometimes, the proper collection date is in the comment field
   # we're dropping data that has a StatisticalBaseCode because we don't want
   # values averaged over multiple days
-  range_dates <- filter(dat, ActivityStartDate != ActivityEndDate) %>%
+  range_dates <- filter(dat, !is.na(ActivityEndDate)) %>%
+    filter(ActivityStartDate != ActivityEndDate) %>%
     filter(is.na(StatisticalBaseCode)) %>%
     filter(grepl('Collected', ResultCommentText)) %>%
     mutate(newActivityStartDate = gsub('(Collected: )(.*\\d{4})(\\s*\\d+.*)', '\\2', ResultCommentText, perl = TRUE),
@@ -153,8 +158,12 @@ resolve_statcodes <- function(in_ind, out_ind) {
     rename(ActivityStartDate = newActivityStartDate,
            `ActivityStartTime/Time` = newActivityStartTime)
 
+  # print message about date recoveries
+  message(paste(nrow(range_dates), 'observations with mismatching start/end dates were recovered by extracting collection dates from comments'))
+
   # those that don't have collected in the comments
-  other <- filter(dat, ActivityStartDate != ActivityEndDate) %>%
+  other <- filter(dat, !is.na(ActivityEndDate)) %>%
+    filter(ActivityStartDate != ActivityEndDate) %>%
     filter(is.na(StatisticalBaseCode)) %>%
     filter(!grepl('Collected', ResultCommentText))
 
@@ -168,10 +177,37 @@ resolve_statcodes <- function(in_ind, out_ind) {
     filter(n == 1) %>%
     select(-n) %>% ungroup()
 
-  out <- filter(dat, ActivityStartDate == ActivityEndDate) %>% # keep all data where start/end dates are same
+
+
+  drop <- other %>%
+    group_by(MonitoringLocationIdentifier, ActivityStartDate) %>%
+    summarize(n = n()) %>%
+    filter(n > 1)
+
+  widnr <- filter(drop, grepl('WIDNR', MonitoringLocationIdentifier))
+
+  message(paste(nrow(drop), 'site-dates and', sum(drop$n),
+                'raw observations were dropped because n>1 obs per site-date and start-end dates did not match.',
+                'WIDNR was responsible for', nrow(widnr), 'site-dates and', sum(widnr$n), 'raw observations.'))
+
+  statdiffdates <- filter(dat, !is.na(ActivityEndDate)) %>%
+    filter(ActivityStartDate != ActivityEndDate) %>%
+    filter(!is.na(StatisticalBaseCode))
+
+  message(length(unique(paste(statdiffdates$MonitoringLocationIdentifier, statdiffdates$ActivityStartDate))),
+          ' site-dates and ', nrow(statdiffdates), ' raw observations were dropped because the observation had a stat code but different start/end dates')
+
+
+  out <- filter(dat, ActivityStartDate == ActivityEndDate | !is.na(ActivityEndDate)) %>% # keep all data where start/end dates are same
     bind_rows(range_dates) %>% # keep all data where we fixed the dates from the comments
     bind_rows(keep_onesiteday) # keep all data where the start/end was different but there was only one value per site-date
 
+  perc_keep <- round((nrow(dat) - nrow(out))/nrow(dat)*100, 1)
+  raw_dropped <- nrow(dat) - nrow(out)
+
+
+  message(paste(perc_keep, 'percent of observations were kept...or',
+                raw_dropped, 'raw observations were dropped due to mismatch start/end dates'))
 
   data_file <- scipiper::as_data_file(out_ind)
   saveRDS(out, data_file)
