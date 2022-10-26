@@ -198,7 +198,7 @@ resolve_statcodes <- function(in_ind, out_ind) {
           ' site-dates and ', nrow(statdiffdates), ' raw observations were dropped because the observation had a stat code but different start/end dates')
 
 
-  out <- filter(dat, ActivityStartDate == ActivityEndDate | !is.na(ActivityEndDate)) %>% # keep all data where start/end dates are same
+  out <- filter(dat, ActivityStartDate == ActivityEndDate | is.na(ActivityEndDate)) %>% # keep all data where start/end dates are same
     bind_rows(range_dates) %>% # keep all data where we fixed the dates from the comments
     bind_rows(keep_onesiteday) # keep all data where the start/end was different but there was only one value per site-date
 
@@ -206,7 +206,7 @@ resolve_statcodes <- function(in_ind, out_ind) {
   raw_dropped <- nrow(dat) - nrow(out)
 
 
-  message(paste(perc_keep, 'percent of observations were kept...or',
+  message(paste(perc_keep, 'percent of observations were dropped...or',
                 raw_dropped, 'raw observations were dropped due to mismatch start/end dates'))
 
   data_file <- scipiper::as_data_file(out_ind)
