@@ -99,11 +99,10 @@ munge_wqp_withoutdepths <- function(in_ind, min_value, max_value, max_daily_rang
     mutate(temperature_mean_daily = ifelse(grepl('mean', StatisticalBaseCode, ignore.case = TRUE), ResultMeasureValue, NA),
            temperature_min_daily = ifelse(grepl('min', StatisticalBaseCode, ignore.case = TRUE), ResultMeasureValue, NA),
            temperature_max_daily = ifelse(grepl('max', StatisticalBaseCode, ignore.case = TRUE), ResultMeasureValue, NA)) %>%
+    # we don't know the number of observations here because stat codes were used
     mutate(n_obs = NA) %>%
     group_by(MonitoringLocationIdentifier, ActivityStartDate) %>%
     summarize(across(c(temperature_mean_daily, temperature_min_daily, temperature_max_daily, n_obs) , ~ first(na.omit(.))))
-
-  # we don't know the number of observations here because stat codes were used
 
 
   dat_daily <- ungroup(dat_reduced) %>%
@@ -120,7 +119,6 @@ munge_wqp_withoutdepths <- function(in_ind, min_value, max_value, max_daily_rang
            temperature_min_daily > min_value & temperature_min_daily < max_value|is.na(temperature_min_daily),
            temperature_max_daily > min_value & temperature_max_daily < max_value|is.na(temperature_max_daily))
 
-  # save
   data_file <- scipiper::as_data_file(out_ind)
   saveRDS(dat_daily, data_file)
   gd_put(out_ind)
@@ -128,8 +126,13 @@ munge_wqp_withoutdepths <- function(in_ind, min_value, max_value, max_daily_rang
 }
 
 resolve_statcodes <- function(in_ind, out_ind) {
+
   dat <- readRDS(sc_retrieve(in_ind, remake_file = 'getters.yml')) %>%
-    ungroup() %>%
+    ungroup()
+
+  nrow_o <- nrow(dat)
+
+  dat <- dat %>%
   # drop values that are estimated or blank-corrected
   # drop values that are not min, mean, max
     filter(!ResultValueTypeName %in% c('Estimated', 'Blank Corrected Calc')) %>%
@@ -139,8 +142,8 @@ resolve_statcodes <- function(in_ind, out_ind) {
 
 
   # print message that says how many observations we lost when dropped
-  nrow_o <- nrow(readRDS(sc_retrieve(in_ind, remake_file = 'getters.yml')))
   message(paste(nrow_o - nrow(dat), 'observations were dropped due to estimation, blank correction, or statcode that was not mean, min, max'))
+
   # for some data, the start and end dates are different, and data providers
   # seem to be using these as a date range of the whole dataset
   # sometimes, the proper collection date is in the comment field
@@ -176,8 +179,6 @@ resolve_statcodes <- function(in_ind, out_ind) {
     mutate(n = n()) %>%
     filter(n == 1) %>%
     select(-n) %>% ungroup()
-
-
 
   drop <- other %>%
     group_by(MonitoringLocationIdentifier, ActivityStartDate) %>%

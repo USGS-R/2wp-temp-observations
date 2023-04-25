@@ -167,6 +167,19 @@ combine_all_dat <- function(wqp_ind, nwis_ind, ecosheds_ind, norwest_ind, out_in
     select(site_id, date = SampleDate, mean_temp_degC = DailyMean,
            min_temp_degC = DailyMin, max_temp_degC = DailyMax, n_obs = Nobs, source)
 
+  #!! start here
+  # we still have really large n values, still have max and min temperatures for a day > 30 deg difference
+  # this should be a sign that the start times weren't coded right and need to be dropped.
+  #
+  #browser()
+
+  # in NWIS, using data after 2000:
+  # 95% of obs have temp_diff of <= 5.7
+  # 99% of obs have temp_diff of <= 8.9
+  # 99.5% of obs have temp_diff <= 10.3
+  # 99.9% of obs have temp_diff <= 13.2
+  # save
+
   all_dat <- bind_rows(nwis, wqp, ecosheds, norwest) %>%
     select(-unique_id) %>%
     distinct(site_id, date, time, mean_temp_degC, min_temp_degC, max_temp_degC, .keep_all = TRUE)
