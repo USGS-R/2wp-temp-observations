@@ -1,3 +1,5 @@
+Active development moved to https://code.usgs.gov/wma/wp/2wp-temp-observations
+
 # Purpose
 This repository contains a pipeline to assemble water temperature data for streams across the United States.
 
